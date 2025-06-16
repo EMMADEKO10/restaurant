@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { useToast } from '@/components/ui/toast-provider';
 import { useRouter, usePathname } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, User, Loader2 } from 'lucide-react';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 type AuthMode = 'signin' | 'signup' | 'reset';
 
@@ -117,6 +118,23 @@ export function AuthForm() {
             {mode === 'reset' && 'Entrez votre email pour réinitialiser votre mot de passe'}
           </p>
         </div>
+
+        {/* Bouton Google - seulement pour connexion et inscription */}
+        {mode !== 'reset' && (
+          <div className="mb-6">
+            <GoogleSignInButton mode={mode} />
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                  ou
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {mode === 'signup' && (

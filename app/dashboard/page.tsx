@@ -1,8 +1,92 @@
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { UserMenu } from '@/components/auth/UserMenu';
-import { Utensils, Users, Calendar, BarChart3 } from 'lucide-react';
+"use client"
+
+import { useState, useEffect } from 'react'
+import { AuthGuard } from '@/components/auth/AuthGuard'
+import { UserMenu } from '@/components/auth/UserMenu'
+import CreateDishForm from '@/components/dashboard/CreateDishForm'
+import DishList from '@/components/dashboard/DishList'
+import { useAuth } from '@/lib/hooks/useAuth'
+import { createDish, updateDish, deleteDish, getUserDishes } from '@/lib/firebase/dishes'
+import type { Dish } from '@/lib/firebase/dishes'
+import { Utensils, Users, Calendar, BarChart3, Plus } from 'lucide-react'
 
 export default function DashboardPage() {
+  const { user } = useAuth()
+  const [dishes, setDishes] = useState<Dish[]>([])
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
+  const [editingDish, setEditingDish] = useState<Dish | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Charger les plats de l'utilisateur
+  useEffect(() => {
+    const loadDishes = async () => {
+      if (user) {
+        try {
+          setIsLoading(true)
+          const userDishes = await getUserDishes(user.uid)
+          setDishes(userDishes)
+        } catch (error) {
+          console.error('Erreur lors du chargement des plats:', error)
+        } finally {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadDishes()
+  }, [user])
+
+  const handleCreateDish = async (dishData: Omit<Dish, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newDish = await createDish(dishData)
+      setDishes(prev => [newDish, ...prev])
+      console.log('Nouveau plat créé:', newDish)
+    } catch (error) {
+      console.error('Erreur lors de la création du plat:', error)
+      throw error
+    }
+  }
+
+  const handleEditDish = (dish: Dish) => {
+    setEditingDish(dish)
+    setIsCreateFormOpen(true)
+  }
+
+  const handleDeleteDish = async (id: string) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce plat ?')) {
+      try {
+        await deleteDish(id)
+        setDishes(prev => prev.filter(dish => dish.id !== id))
+        console.log('Plat supprimé:', id)
+      } catch (error) {
+        console.error('Erreur lors de la suppression du plat:', error)
+      }
+    }
+  }
+
+  const handleUpdateDish = async (dishData: Omit<Dish, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingDish?.id) {
+      try {
+        await updateDish(editingDish.id, dishData)
+        setDishes(prev => prev.map(dish => 
+          dish.id === editingDish.id 
+            ? { ...dish, ...dishData, id: editingDish.id }
+            : dish
+        ))
+        setEditingDish(null)
+        console.log('Plat mis à jour:', editingDish.id)
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour du plat:', error)
+        throw error
+      }
+    }
+  }
+
+  const handleCloseForm = () => {
+    setIsCreateFormOpen(false)
+    setEditingDish(null)
+  }
+
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -89,10 +173,10 @@ export default function DashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Commandes en cours
+                    Plats créés
                   </p>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    12
+                    {dishes.length}
                   </p>
                 </div>
               </div>
@@ -100,18 +184,28 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Actions rapides
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button 
+                onClick={() => setIsCreateFormOpen(true)}
+                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-restaurant-100 dark:bg-restaurant-900/20 rounded-lg group-hover:bg-restaurant-200 dark:group-hover:bg-restaurant-900/40 transition-colors">
+                    <Plus className="h-5 w-5 text-restaurant-600 dark:text-restaurant-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white">Créer un plat</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Ajouter un nouveau plat au menu</p>
+                  </div>
+                </div>
+              </button>
               <button className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
                 <h4 className="font-medium text-gray-900 dark:text-white">Nouvelle réservation</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Ajouter une réservation</p>
-              </button>
-              <button className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
-                <h4 className="font-medium text-gray-900 dark:text-white">Gérer le menu</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Modifier les plats</p>
               </button>
               <button className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
                 <h4 className="font-medium text-gray-900 dark:text-white">Voir les rapports</h4>
@@ -119,8 +213,33 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
+
+          {/* Dishes Management */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-restaurant-600"></div>
+                <span className="ml-3 text-gray-600 dark:text-gray-400">Chargement des plats...</span>
+              </div>
+            ) : (
+              <DishList
+                dishes={dishes}
+                onEdit={handleEditDish}
+                onDelete={handleDeleteDish}
+                onCreateNew={() => setIsCreateFormOpen(true)}
+              />
+            )}
+          </div>
         </main>
+
+        {/* Create/Edit Dish Form */}
+        <CreateDishForm
+          isOpen={isCreateFormOpen}
+          onClose={handleCloseForm}
+          onSubmit={editingDish ? handleUpdateDish : handleCreateDish}
+          editingDish={editingDish}
+        />
       </div>
     </AuthGuard>
-  );
+  )
 } 

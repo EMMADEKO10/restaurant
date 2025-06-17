@@ -15,6 +15,7 @@
   "dependencies": {
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
     "@hookform/resolvers": "^5.1.1",
+    "cloudinary": "^2.6.1",
     "clsx": "^2.1.1",
     "firebase": "^11.9.1",
     "lucide-react": "^0.514.0",

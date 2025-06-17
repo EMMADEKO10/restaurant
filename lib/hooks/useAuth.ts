@@ -14,6 +14,32 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase';
 
+// Fonction pour traduire les erreurs Firebase
+const getErrorMessage = (errorCode: string): string => {
+  switch (errorCode) {
+    case 'auth/invalid-credential':
+      return 'Email ou mot de passe incorrect';
+    case 'auth/user-not-found':
+      return 'Aucun compte trouvé avec cet email';
+    case 'auth/wrong-password':
+      return 'Mot de passe incorrect';
+    case 'auth/email-already-in-use':
+      return 'Un compte existe déjà avec cet email';
+    case 'auth/weak-password':
+      return 'Le mot de passe doit contenir au moins 6 caractères';
+    case 'auth/invalid-email':
+      return 'Adresse email invalide';
+    case 'auth/too-many-requests':
+      return 'Trop de tentatives. Réessayez plus tard';
+    case 'auth/network-request-failed':
+      return 'Erreur de connexion réseau';
+    case 'auth/configuration-not-found':
+      return 'Configuration Firebase non trouvée';
+    default:
+      return 'Une erreur inattendue s\'est produite';
+  }
+};
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +72,8 @@ export function useAuth() {
       console.error('Erreur de connexion:', error);
       console.error('Code d\'erreur:', error.code);
       console.error('Message d\'erreur:', error.message);
-      return { success: false, error: error.message };
+      const errorMessage = getErrorMessage(error.code);
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -69,7 +96,8 @@ export function useAuth() {
       console.error('Code d\'erreur:', error.code);
       console.error('Message d\'erreur:', error.message);
       console.error('Erreur complète:', error);
-      return { success: false, error: error.message };
+      const errorMessage = getErrorMessage(error.code);
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -97,7 +125,8 @@ export function useAuth() {
       console.error('Erreur de connexion Google:', error);
       console.error('Code d\'erreur:', error.code);
       console.error('Message d\'erreur:', error.message);
-      return { success: false, error: error.message };
+      const errorMessage = getErrorMessage(error.code);
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -115,7 +144,8 @@ export function useAuth() {
       await sendPasswordResetEmail(auth, email);
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.message };
+      const errorMessage = getErrorMessage(error.code);
+      return { success: false, error: errorMessage };
     }
   };
 

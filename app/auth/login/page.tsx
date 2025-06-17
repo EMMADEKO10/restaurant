@@ -2,6 +2,7 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Utensils, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { testAuthMethods, checkAuthConfiguration } from '@/lib/test-auth';
 
 export default function LoginPage() {
   return (
@@ -45,4 +46,8 @@ export default function LoginPage() {
       </div>
     </AuthGuard>
   );
-} 
+}
+
+// Dans la console du navigateur, tapez :
+checkAuthConfiguration();
+testAuthMethods(); 

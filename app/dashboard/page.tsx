@@ -42,7 +42,7 @@ export default function DashboardPage() {
       setDishes(prev => [newDish, ...prev])
       console.log('Nouveau plat créé:', newDish)
     } catch (error) {
-      console.error('Erreur lors de la création du plat:', error)
+      console.error('Erreur lors de la création des plats :', error)
       throw error
     }
   }

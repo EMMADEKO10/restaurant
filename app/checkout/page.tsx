@@ -10,10 +10,7 @@ import {
   Users, 
   CheckCircle, 
   CreditCard,
-  Receipt,
-  Calendar,
-  Phone,
-  User
+  Receipt
 } from 'lucide-react'
 import Header from '@/components/homePage/Header'
 
@@ -25,25 +22,10 @@ interface Table {
   location: 'indoor' | 'outdoor' | 'window'
 }
 
-interface OrderDetails {
-  customerName: string
-  phone: string
-  reservationDate: string
-  reservationTime: string
-  specialRequests: string
-}
-
 export default function CheckoutPage() {
   const router = useRouter()
   const { state, clearCart } = useCart()
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
-  const [orderDetails, setOrderDetails] = useState<OrderDetails>({
-    customerName: '',
-    phone: '',
-    reservationDate: '',
-    reservationTime: '',
-    specialRequests: ''
-  })
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -82,15 +64,8 @@ export default function CheckoutPage() {
     setCurrentStep(2)
   }
 
-  const handleOrderDetailsChange = (field: keyof OrderDetails, value: string) => {
-    setOrderDetails(prev => ({
-      ...prev,
-      [field]: value
-    }))
-  }
-
   const handleSubmitOrder = async () => {
-    if (!selectedTable || !orderDetails.customerName || !orderDetails.phone) {
+    if (!selectedTable) {
       return
     }
 
@@ -101,10 +76,6 @@ export default function CheckoutPage() {
     
     // Redirection vers la page de confirmation
     router.push('/checkout/success')
-  }
-
-  const canProceedToStep3 = () => {
-    return orderDetails.customerName && orderDetails.phone && orderDetails.reservationDate && orderDetails.reservationTime
   }
 
   if (state.items.length === 0) {
@@ -159,7 +130,7 @@ export default function CheckoutPage() {
           {/* Progress Steps */}
           <div className="mb-8">
             <div className="flex items-center justify-center space-x-4">
-              {[1, 2, 3].map((step) => (
+              {[1, 2].map((step) => (
                 <div key={step} className="flex items-center">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                     currentStep >= step 
@@ -172,7 +143,7 @@ export default function CheckoutPage() {
                       <span className="font-semibold">{step}</span>
                     )}
                   </div>
-                  {step < 3 && (
+                  {step < 2 && (
                     <div className={`w-16 h-0.5 mx-2 ${
                       currentStep > step ? 'bg-restaurant-500' : 'bg-gray-300'
                     }`} />
@@ -185,9 +156,6 @@ export default function CheckoutPage() {
                 Sélection de table
               </span>
               <span className={`text-sm ${currentStep >= 2 ? 'text-restaurant-600 font-medium' : 'text-gray-500'}`}>
-                Informations
-              </span>
-              <span className={`text-sm ${currentStep >= 3 ? 'text-restaurant-600 font-medium' : 'text-gray-500'}`}>
                 Confirmation
               </span>
             </div>
@@ -231,122 +199,22 @@ export default function CheckoutPage() {
 
               {currentStep === 2 && (
                 <div className="bg-white rounded-2xl shadow-lg p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Informations de réservation</h2>
-                  
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <User className="h-4 w-4 inline mr-2" />
-                          Nom complet
-                        </label>
-                        <input
-                          type="text"
-                          value={orderDetails.customerName}
-                          onChange={(e) => handleOrderDetailsChange('customerName', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-restaurant-500 focus:border-transparent"
-                          placeholder="Votre nom complet"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <Phone className="h-4 w-4 inline mr-2" />
-                          Téléphone
-                        </label>
-                        <input
-                          type="tel"
-                          value={orderDetails.phone}
-                          onChange={(e) => handleOrderDetailsChange('phone', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-restaurant-500 focus:border-transparent"
-                          placeholder="06 12 34 56 78"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <Calendar className="h-4 w-4 inline mr-2" />
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          value={orderDetails.reservationDate}
-                          onChange={(e) => handleOrderDetailsChange('reservationDate', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-restaurant-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <Clock className="h-4 w-4 inline mr-2" />
-                          Heure
-                        </label>
-                        <input
-                          type="time"
-                          value={orderDetails.reservationTime}
-                          onChange={(e) => handleOrderDetailsChange('reservationTime', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-restaurant-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Demandes spéciales
-                      </label>
-                      <textarea
-                        value={orderDetails.specialRequests}
-                        onChange={(e) => handleOrderDetailsChange('specialRequests', e.target.value)}
-                        rows={3}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-restaurant-500 focus:border-transparent"
-                        placeholder="Allergies, préférences, demandes spéciales..."
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between mt-8">
-                    <button
-                      onClick={() => setCurrentStep(1)}
-                      className="px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Retour
-                    </button>
-                    <button
-                      onClick={() => setCurrentStep(3)}
-                      disabled={!canProceedToStep3()}
-                      className="px-6 py-3 bg-restaurant-600 text-white rounded-lg hover:bg-restaurant-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Continuer
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 3 && (
-                <div className="bg-white rounded-2xl shadow-lg p-6">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Confirmation de commande</h2>
                   
                   <div className="space-y-6">
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-900 mb-2">Résumé de la réservation</h3>
+                      <h3 className="font-semibold text-gray-900 mb-2">Résumé de la commande</h3>
                       <div className="space-y-2 text-sm">
                         <p><strong>Table :</strong> {selectedTable?.number} ({getLocationLabel(selectedTable?.location || '')})</p>
                         <p><strong>Capacité :</strong> {selectedTable?.capacity} personnes</p>
-                        <p><strong>Date :</strong> {orderDetails.reservationDate}</p>
-                        <p><strong>Heure :</strong> {orderDetails.reservationTime}</p>
-                        <p><strong>Nom :</strong> {orderDetails.customerName}</p>
-                        <p><strong>Téléphone :</strong> {orderDetails.phone}</p>
-                        {orderDetails.specialRequests && (
-                          <p><strong>Demandes spéciales :</strong> {orderDetails.specialRequests}</p>
-                        )}
+                        <p><strong>Heure de commande :</strong> {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p><strong>Date :</strong> {new Date().toLocaleDateString('fr-FR')}</p>
                       </div>
                     </div>
 
                     <div className="flex justify-between">
                       <button
-                        onClick={() => setCurrentStep(2)}
+                        onClick={() => setCurrentStep(1)}
                         className="px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         Retour

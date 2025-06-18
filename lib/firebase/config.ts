@@ -11,6 +11,31 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Vérifier la configuration Firebase
+const validateFirebaseConfig = () => {
+  const requiredFields = [
+    'apiKey',
+    'authDomain', 
+    'projectId',
+    'storageBucket',
+    'messagingSenderId',
+    'appId'
+  ];
+  
+  const missingFields = requiredFields.filter(field => !firebaseConfig[field as keyof typeof firebaseConfig]);
+  
+  if (missingFields.length > 0) {
+    console.error('Configuration Firebase incomplète. Variables manquantes:', missingFields);
+    console.error('Assurez-vous que le fichier .env.local est configuré correctement.');
+    throw new Error(`Configuration Firebase incomplète: ${missingFields.join(', ')}`);
+  }
+  
+  console.log('Configuration Firebase validée avec succès');
+};
+
+// Valider la configuration avant l'initialisation
+validateFirebaseConfig();
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 

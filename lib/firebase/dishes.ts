@@ -111,23 +111,36 @@ export const uploadDishImage = async (file: File, userId: string): Promise<strin
 // Récupérer tous les plats disponibles (pour le menu public)
 export const getAvailableDishes = async () => {
   try {
-    const q = query(
-      collection(db, 'dishes'),
-      where('isAvailable', '==', true),
-      orderBy('category'),
-      orderBy('name')
-    )
+    console.log('Début de la récupération des plats disponibles...')
     
-    const querySnapshot = await getDocs(q)
+    // Récupérer tous les plats et filtrer/trier côté client
+    const dishesRef = collection(db, 'dishes')
+    const querySnapshot = await getDocs(dishesRef)
+    
+    console.log(`Nombre total de plats: ${querySnapshot.size}`)
+    
     const dishes: Dish[] = []
     
     querySnapshot.forEach((doc) => {
-      dishes.push({ id: doc.id, ...doc.data() } as Dish)
+      const data = doc.data() as Dish
+      // Filtrer les plats disponibles côté client
+      if (data.isAvailable) {
+        dishes.push({ id: doc.id, ...data })
+      }
     })
     
+    // Trier par nom côté client
+    dishes.sort((a, b) => a.name.localeCompare(b.name))
+    
+    console.log('Plats disponibles récupérés:', dishes.length)
     return dishes
-  } catch (error) {
-    console.error('Erreur lors de la récupération des plats disponibles:', error)
-    throw error
+  } catch (error: any) {
+    console.error('Erreur détaillée lors de la récupération des plats:', error)
+    
+    if (error.code === 'permission-denied') {
+      throw new Error('Accès refusé à la base de données. Vérifiez les règles de sécurité Firestore.')
+    }
+    
+    throw new Error(`Erreur lors du chargement du menu: ${error.message}`)
   }
 } 

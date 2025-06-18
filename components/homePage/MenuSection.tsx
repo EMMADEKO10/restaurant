@@ -1,121 +1,47 @@
 "use client"
 
-import { useState } from 'react'
-import { Plus, Utensils, Coffee } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Utensils, Coffee, Dessert, ChefHat } from 'lucide-react'
 import { useCart, MenuItem, CartItem } from '@/contexts/CartContext'
-
-// Données d'exemple pour les produits
-const menuItems: MenuItem[] = [
-  // Plats
-  {
-    id: '1',
-    name: 'Burger Classique',
-    description: 'Pain artisanal, steak haché 200g, cheddar, salade, tomate, oignon',
-    price: 14.90,
-    image: '🍔',
-    category: 'food',
-    allergens: ['gluten', 'lactose']
-  },
-  {
-    id: '2',
-    name: 'Pizza Margherita',
-    description: 'Base tomate, mozzarella di bufala, basilic frais, huile d\'olive',
-    price: 12.50,
-    image: '🍕',
-    category: 'food',
-    allergens: ['gluten', 'lactose']
-  },
-  {
-    id: '3',
-    name: 'Salade César',
-    description: 'Salade romaine, poulet grillé, parmesan, croûtons, sauce césar',
-    price: 11.90,
-    image: '🥗',
-    category: 'food',
-    allergens: ['lactose', 'œufs']
-  },
-  {
-    id: '4',
-    name: 'Pasta Carbonara',
-    description: 'Spaghetti, lardons, œuf, parmesan, crème fraîche, poivre noir',
-    price: 13.90,
-    image: '🍝',
-    category: 'food',
-    allergens: ['gluten', 'lactose', 'œufs']
-  },
-  {
-    id: '5',
-    name: 'Tacos Poulet',
-    description: 'Tortilla, poulet épicé, cheddar, salade, tomate, sauce épicée',
-    price: 9.90,
-    image: '🌮',
-    category: 'food',
-    allergens: ['gluten', 'lactose']
-  },
-  {
-    id: '6',
-    name: 'Fish & Chips',
-    description: 'Poisson pané, frites maison, sauce tartare, salade de chou',
-    price: 15.90,
-    image: '🍟',
-    category: 'food',
-    allergens: ['gluten', 'œufs']
-  },
-  
-  // Boissons
-  {
-    id: '7',
-    name: 'Coca-Cola',
-    description: 'Boisson gazeuse rafraîchissante - 33cl',
-    price: 3.50,
-    image: '🥤',
-    category: 'drink'
-  },
-  {
-    id: '8',
-    name: 'Jus d\'Orange Frais',
-    description: 'Jus d\'orange pressé du jour - 25cl',
-    price: 4.90,
-    image: '🍊',
-    category: 'drink'
-  },
-  {
-    id: '9',
-    name: 'Café Espresso',
-    description: 'Café italien intense et aromatique',
-    price: 2.50,
-    image: '☕',
-    category: 'drink'
-  },
-  {
-    id: '10',
-    name: 'Thé Vert',
-    description: 'Thé vert bio, miel et citron disponibles',
-    price: 3.00,
-    image: '🍵',
-    category: 'drink'
-  },
-  {
-    id: '11',
-    name: 'Smoothie Fruits Rouges',
-    description: 'Fraises, framboises, myrtilles, yaourt grec - 40cl',
-    price: 5.90,
-    image: '🥤',
-    category: 'drink'
-  },
-  {
-    id: '12',
-    name: 'Bière Artisanale',
-    description: 'Bière blonde locale, 5.2% vol - 33cl',
-    price: 4.50,
-    image: '🍺',
-    category: 'drink'
-  }
-]
+import { getAvailableDishes } from '@/lib/firebase/dishes'
+import type { Dish } from '@/lib/firebase/dishes'
 
 export default function MenuSection() {
-  const [activeCategory, setActiveCategory] = useState<'all' | 'food' | 'drink'>('all')
+  const [activeCategory, setActiveCategory] = useState<'all' | 'food' | 'drink' | 'dessert' | 'appetizer'>('all')
+  const [dishes, setDishes] = useState<Dish[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { addItem } = useCart()
+
+  // Récupérer les plats disponibles depuis Firestore
+  useEffect(() => {
+    const loadDishes = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const availableDishes = await getAvailableDishes()
+        setDishes(availableDishes)
+      } catch (err) {
+        console.error('Erreur lors du chargement des plats:', err)
+        setError('Erreur lors du chargement du menu')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadDishes()
+  }, [])
+
+  // Convertir les plats Firestore en format MenuItem
+  const menuItems: MenuItem[] = dishes.map(dish => ({
+    id: dish.id || '',
+    name: dish.name,
+    description: dish.description,
+    price: dish.price,
+    image: dish.imageUrl || '🍽️', // Utiliser l'image Cloudinary ou une icône par défaut
+    category: dish.category,
+    allergens: dish.allergens || []
+  }))
 
   const filteredItems = activeCategory === 'all' 
     ? menuItems 
@@ -127,6 +53,90 @@ export default function MenuSection() {
       quantity: 1
     }
     addItem(cartItem)
+  }
+
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'food': return 'Plats'
+      case 'drink': return 'Boissons'
+      case 'dessert': return 'Desserts'
+      case 'appetizer': return 'Entrées'
+      default: return category
+    }
+  }
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'food': return <Utensils className="h-4 w-4" />
+      case 'drink': return <Coffee className="h-4 w-4" />
+      case 'dessert': return <Dessert className="h-4 w-4" />
+      case 'appetizer': return <ChefHat className="h-4 w-4" />
+      default: return <Utensils className="h-4 w-4" />
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex justify-center">
+          <div className="inline-flex bg-white dark:bg-gray-800 rounded-xl p-1 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-3 rounded-lg font-medium text-gray-400">
+              Chargement...
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden animate-pulse">
+              <div className="h-48 bg-gray-200 dark:bg-gray-700"></div>
+              <div className="p-6 space-y-3">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+          <ChefHat className="h-8 w-8 text-red-500" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          Erreur de chargement
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
+          {error}
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-restaurant-600 hover:bg-restaurant-700 rounded-lg transition-colors"
+        >
+          Réessayer
+        </button>
+      </div>
+    )
+  }
+
+  if (dishes.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+          <ChefHat className="h-8 w-8 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          Aucun plat disponible
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400">
+          Le menu sera bientôt disponible.
+        </p>
+      </div>
+    )
   }
 
   return (
@@ -144,28 +154,25 @@ export default function MenuSection() {
           >
             Tout
           </button>
-          <button
-            onClick={() => setActiveCategory('food')}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-              activeCategory === 'food'
-                ? 'bg-restaurant-500 text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-300 hover:text-restaurant-600 dark:hover:text-restaurant-400'
-            }`}
-          >
-            <Utensils className="h-4 w-4" />
-            Plats
-          </button>
-          <button
-            onClick={() => setActiveCategory('drink')}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-              activeCategory === 'drink'
-                ? 'bg-restaurant-500 text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-300 hover:text-restaurant-600 dark:hover:text-restaurant-400'
-            }`}
-          >
-            <Coffee className="h-4 w-4" />
-            Boissons
-          </button>
+          {['food', 'drink', 'dessert', 'appetizer'].map((category) => {
+            const categoryItems = dishes.filter(dish => dish.category === category)
+            if (categoryItems.length === 0) return null
+            
+            return (
+              <button
+                key={category}
+                onClick={() => setActiveCategory(category as any)}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  activeCategory === category
+                    ? 'bg-restaurant-500 text-white shadow-md'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-restaurant-600 dark:hover:text-restaurant-400'
+                }`}
+              >
+                {getCategoryIcon(category)}
+                {getCategoryLabel(category)}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -177,8 +184,22 @@ export default function MenuSection() {
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
           >
             {/* Image */}
-            <div className="h-48 bg-gradient-to-br from-restaurant-100 to-restaurant-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
-              <span className="text-6xl">{item.image}</span>
+            <div className="h-48 bg-gradient-to-br from-restaurant-100 to-restaurant-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center overflow-hidden">
+              {item.image && item.image.startsWith('http') ? (
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.style.display = 'none'
+                    target.nextElementSibling?.classList.remove('hidden')
+                  }}
+                />
+              ) : null}
+              <span className={`text-6xl ${item.image && item.image.startsWith('http') ? 'hidden' : ''}`}>
+                {item.image || '🍽️'}
+              </span>
             </div>
             
             {/* Content */}
@@ -201,7 +222,7 @@ export default function MenuSection() {
                 <div className="mb-4">
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Allergènes:</p>
                   <div className="flex flex-wrap gap-1">
-                    {item.allergens.map((allergen: string) => (
+                    {item.allergens.slice(0, 3).map((allergen: string) => (
                       <span
                         key={allergen}
                         className="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full"
@@ -209,6 +230,11 @@ export default function MenuSection() {
                         {allergen}
                       </span>
                     ))}
+                    {item.allergens.length > 3 && (
+                      <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full">
+                        +{item.allergens.length - 3}
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
@@ -225,6 +251,21 @@ export default function MenuSection() {
           </div>
         ))}
       </div>
+
+      {/* Empty State for Filtered Results */}
+      {filteredItems.length === 0 && dishes.length > 0 && (
+        <div className="text-center py-12">
+          <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+            {getCategoryIcon(activeCategory)}
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            Aucun {getCategoryLabel(activeCategory).toLowerCase()} disponible
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Essayez une autre catégorie ou revenez plus tard.
+          </p>
+        </div>
+      )}
     </div>
   )
-}
+} 

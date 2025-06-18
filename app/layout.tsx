@@ -2,6 +2,7 @@ import '../styles/globals.css'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ui/theme-provider'
 import { ToastProvider } from '@/components/ui/toast-provider'
+import { CartProviderClient } from '@/components/providers/CartProviderClient'
 import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -22,7 +23,9 @@ export default function RootLayout({
       <body className={cn('min-h-screen bg-background antialiased', inter.className)}>
         <ThemeProvider attribute="class" defaultTheme="light">
           <ToastProvider>
-            {children}
+            <CartProviderClient>
+              {children}
+            </CartProviderClient>
           </ToastProvider>
         </ThemeProvider>
       </body>

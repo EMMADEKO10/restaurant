@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChefHat, LogIn, UserPlus, ShoppingCart, Menu, X } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 
@@ -12,6 +13,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onLogin, onRegister, onCartToggle, isLoading }: HeaderProps) {
+  const router = useRouter()
   const { state } = useCart()
   const itemCount = state.itemCount
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -22,6 +24,16 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false)
+  }
+
+  const handleCartClick = () => {
+    if (itemCount > 0) {
+      // Rediriger vers la page de commande si le panier n'est pas vide
+      router.push('/checkout')
+    } else {
+      // Ouvrir le modal panier si le panier est vide
+      onCartToggle()
+    }
   }
 
   return (
@@ -55,7 +67,7 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
           <div className="hidden md:flex items-center gap-2 lg:gap-3">
             {/* Cart Button */}
             <button
-              onClick={onCartToggle}
+              onClick={handleCartClick}
               className="relative p-2.5 lg:p-3 text-gray-600 dark:text-gray-300 hover:text-restaurant-600 dark:hover:text-restaurant-400 hover:bg-restaurant-50 dark:hover:bg-gray-700 rounded-lg lg:rounded-xl transition-all duration-200"
             >
               <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6" />
@@ -92,7 +104,7 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
           <div className="flex items-center gap-2 md:hidden">
             {/* Cart Button Mobile */}
             <button
-              onClick={onCartToggle}
+              onClick={handleCartClick}
               className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-restaurant-600 dark:hover:text-restaurant-400 hover:bg-restaurant-50 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
             >
               <ShoppingCart className="h-5 w-5" />

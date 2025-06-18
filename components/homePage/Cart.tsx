@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { Trash2, Plus, Minus, ShoppingCart, X } from 'lucide-react';
 
@@ -10,6 +11,7 @@ interface CartProps {
 }
 
 export default function Cart({ isOpen, onClose }: CartProps) {
+  const router = useRouter();
   const { state, removeItem, updateQuantity, clearCart } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
@@ -23,13 +25,12 @@ export default function Cart({ isOpen, onClose }: CartProps) {
 
   const handleCheckout = async () => {
     setIsCheckingOut(true);
-    // Ici vous pouvez ajouter la logique de commande
-    // Par exemple, rediriger vers une page de commande ou ouvrir un modal
+    // Rediriger vers la page de commande
     setTimeout(() => {
       setIsCheckingOut(false);
-      clearCart();
       onClose();
-    }, 2000);
+      router.push('/checkout');
+    }, 500);
   };
 
   if (!isOpen) return null;
@@ -148,9 +149,9 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                 <button
                   onClick={handleCheckout}
                   disabled={isCheckingOut}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-md transition-colors"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-restaurant-600 hover:bg-restaurant-700 disabled:bg-restaurant-400 rounded-md transition-colors"
                 >
-                  {isCheckingOut ? 'Commande en cours...' : 'Commander'}
+                  {isCheckingOut ? 'Redirection...' : 'Commander'}
                 </button>
               </div>
             </div>

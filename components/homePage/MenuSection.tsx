@@ -19,11 +19,13 @@ export default function MenuSection() {
       try {
         setIsLoading(true)
         setError(null)
+        console.log('Chargement des plats depuis Firebase...')
         const availableDishes = await getAvailableDishes()
+        console.log('Plats chargés:', availableDishes)
         setDishes(availableDishes)
-      } catch (err) {
+      } catch (err: any) {
         console.error('Erreur lors du chargement des plats:', err)
-        setError('Erreur lors du chargement du menu')
+        setError(err.message || 'Erreur lors du chargement du menu')
       } finally {
         setIsLoading(false)
       }
@@ -159,18 +161,18 @@ export default function MenuSection() {
             if (categoryItems.length === 0) return null
             
             return (
-              <button
+          <button
                 key={category}
                 onClick={() => setActiveCategory(category as any)}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
                   activeCategory === category
-                    ? 'bg-restaurant-500 text-white shadow-md'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-restaurant-600 dark:hover:text-restaurant-400'
-                }`}
-              >
+                ? 'bg-restaurant-500 text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-300 hover:text-restaurant-600 dark:hover:text-restaurant-400'
+            }`}
+          >
                 {getCategoryIcon(category)}
                 {getCategoryLabel(category)}
-              </button>
+          </button>
             )
           })}
         </div>
@@ -268,4 +270,4 @@ export default function MenuSection() {
       )}
     </div>
   )
-} 
+}

@@ -8,7 +8,7 @@ export interface MenuItem {
   description: string
   price: number
   image: string
-  category: 'food' | 'drink'
+  category: 'food' | 'drink' | 'dessert' | 'appetizer'
   allergens?: string[]
 }
 

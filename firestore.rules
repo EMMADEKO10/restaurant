@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Règles pour la collection dishes
+    match /dishes/{document} {
+      // Permet la lecture publique des plats (pour le menu public)
+      allow read: if true;
+      
+      // Seuls les utilisateurs connectés peuvent créer/modifier/supprimer
+      allow create, update, delete: if request.auth != null;
+    }
+    
+    // Règles pour les autres collections (si nécessaire)
+    match /{document=**} {
+      // Par défaut, refuser l'accès
+      allow read, write: if false;
+    }
+  }
+} 

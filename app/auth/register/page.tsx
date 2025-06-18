@@ -21,9 +21,11 @@ export default function RegisterPage() {
 
           {/* Logo et titre */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-restaurant-500 rounded-full mb-4">
-              <Utensils className="h-8 w-8 text-white" />
-            </div>
+            <Link href="/" className="inline-block">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-restaurant-500 rounded-full mb-4 hover:bg-restaurant-600 transition-colors cursor-pointer">
+                <Utensils className="h-8 w-8 text-white" />
+              </div>
+            </Link>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Créer un compte
             </h1>

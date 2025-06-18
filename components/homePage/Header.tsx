@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChefHat, LogIn, UserPlus, ShoppingCart, Menu, X } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
+import Link from 'next/link'
 
 interface HeaderProps {
   onLogin: () => void
@@ -41,7 +42,7 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-3 sm:py-4">
           {/* Logo et titre */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
             <div className="p-1.5 sm:p-2 bg-gradient-to-r from-restaurant-500 to-restaurant-600 rounded-lg sm:rounded-xl shadow-md">
               <ChefHat className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
@@ -61,7 +62,7 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
                 Manager
               </p>
             </div>
-          </div>
+          </Link>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2 lg:gap-3">

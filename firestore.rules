@@ -10,6 +10,21 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null;
     }
     
+    // Règles pour la collection orders
+    match /orders/{document} {
+      // Permet la lecture des commandes aux utilisateurs connectés (admin, serveurs)
+      allow read: if request.auth != null;
+      
+      // Permet la création de commandes (même sans authentification pour les clients)
+      allow create: if true;
+      
+      // Permet la mise à jour des commandes aux utilisateurs connectés (admin, serveurs)
+      allow update: if request.auth != null;
+      
+      // Permet la suppression des commandes aux utilisateurs connectés (admin, serveurs)
+      allow delete: if request.auth != null;
+    }
+    
     // Règles pour les autres collections (si nécessaire)
     match /{document=**} {
       // Par défaut, refuser l'accès

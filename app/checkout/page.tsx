@@ -1,8 +1,10 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
+import { createOrder } from '@/lib/firebase/orders'
+import type { Order, Table as OrderTable } from '@/lib/firebase/orders'
 import { 
   ArrowLeft, 
   MapPin, 
@@ -70,12 +72,46 @@ export default function CheckoutPage() {
     }
 
     setIsSubmitting(true)
-    
-    // Simulation d'envoi de commande
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Redirection vers la page de confirmation
-    router.push('/checkout/success')
+
+    try {
+      // Convertir les items du panier au format OrderItem
+      const orderItems = state.items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        category: item.category
+      }))
+
+      // Convertir la table au format OrderTable
+      const orderTable: OrderTable = {
+        id: selectedTable.id,
+        number: selectedTable.number,
+        capacity: selectedTable.capacity,
+        location: selectedTable.location
+      }
+
+      // Créer la commande
+      const orderData: Omit<Order, 'id' | 'orderNumber' | 'orderTime' | 'createdAt' | 'updatedAt'> = {
+        items: orderItems,
+        total: state.total,
+        table: orderTable,
+        status: 'pending'
+      }
+
+      const newOrder = await createOrder(orderData)
+      
+      // Vider le panier
+      clearCart()
+      
+      // Rediriger vers la page de succès avec l'ID de la commande
+      router.push(`/checkout/success?orderId=${newOrder.id}`)
+    } catch (error) {
+      console.error('Erreur lors de la création de la commande:', error)
+      alert('Une erreur est survenue lors de la création de votre commande. Veuillez réessayer.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (state.items.length === 0) {

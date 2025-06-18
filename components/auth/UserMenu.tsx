@@ -1,14 +1,16 @@
 "use client"
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useToast } from '@/components/ui/toast-provider';
-import { User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, Utensils, Users } from 'lucide-react';
 
 export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleLogout = async () => {
     const result = await logout();
@@ -17,6 +19,11 @@ export function UserMenu() {
     } else {
       toast.error('Erreur de déconnexion', result.error);
     }
+    setIsOpen(false);
+  };
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
     setIsOpen(false);
   };
 
@@ -38,12 +45,28 @@ export function UserMenu() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
           <div className="py-1">
             <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
               <p className="font-medium">{user.displayName || 'Utilisateur'}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
             </div>
+            
+            <button
+              onClick={() => handleNavigation('/dashboard')}
+              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Utensils className="h-4 w-4 mr-2" />
+              Dashboard Admin
+            </button>
+            
+            <button
+              onClick={() => handleNavigation('/server-dashboard')}
+              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Dashboard Serveur
+            </button>
             
             <button
               onClick={() => {

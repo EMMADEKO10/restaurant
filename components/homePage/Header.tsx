@@ -156,13 +156,13 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
                     closeMobileMenu()
                   }}
                   className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-restaurant-500 to-restaurant-600 border border-transparent rounded-lg hover:from-restaurant-600 hover:to-restaurant-700 focus:ring-4 focus:ring-restaurant-300 dark:focus:ring-restaurant-800 transition-all duration-200 shadow-md"
-                  disabled={isLoading}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Inscription
-                </button>
-              </div>
-            </div>
+              disabled={isLoading}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Inscription
+            </button>
+          </div>
+        </div>
           </div>
         )}
       </div>

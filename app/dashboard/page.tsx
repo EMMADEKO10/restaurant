@@ -9,6 +9,8 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import { createDish, updateDish, deleteDish, getUserDishes } from '@/lib/firebase/dishes'
 import type { Dish } from '@/lib/firebase/dishes'
 import { Utensils, Users, Calendar, BarChart3, Plus } from 'lucide-react'
+import Link from 'next/link'
+
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -95,12 +97,12 @@ export default function DashboardPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
-                <a href="/" className="flex items-center group hover:opacity-80 transition-opacity">
+                <Link href="/" className="flex items-center group hover:opacity-80 transition-opacity">
                   <Utensils className="h-8 w-8 text-restaurant-500 mr-3 group-hover:text-restaurant-600 transition-colors" />
                   <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Restaurant Manager
                   </h1>
-                </a>
+                </Link>
               </div>
               <UserMenu />
             </div>

@@ -208,4 +208,35 @@ export const useAuthWithRoles = () => {
     hasPermission: (permission: string) => hasPermission(user, permission),
     hasRole: (role: UserRole['role']) => hasRole(user, role)
   }
+}
+
+export const signUp = async (email: string, password: string, displayName?: string) => {
+  try {
+    const auth = getAuth()
+    
+    // Créer l'utilisateur dans Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+    const user = userCredential.user
+    
+    if (displayName) {
+      await updateProfile(user, { displayName })
+    }
+    
+    // Créer un document utilisateur dans Firestore avec le rôle par défaut
+    await setDoc(doc(db, 'users', user.uid), {
+      email: user.email,
+      displayName: displayName || user.email?.split('@')[0] || '',
+      role: {
+        role: 'client',
+        permissions: getPermissionsForRole('client')
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    })
+    
+    return { success: true, user }
+  } catch (error: any) {
+    console.error('Erreur lors de la création du compte:', error)
+    return { success: false, error: error.message || 'Erreur inconnue' }
+  }
 } 

@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useToast } from '@/components/ui/toast-provider';
-import { User, LogOut, Settings, ChevronDown, Utensils, Users } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, Utensils, Users, Shield } from 'lucide-react';
 
 export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -50,6 +50,14 @@ export function UserMenu() {
             <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
               <p className="font-medium">{user.displayName || 'Utilisateur'}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+              {role && (
+                <div className="flex items-center mt-1 bg-gray-100 dark:bg-gray-700 rounded px-2 py-0.5 w-fit">
+                  <Shield className="h-3 w-3 mr-1 text-restaurant-500" />
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    {role}
+                  </span>
+                </div>
+              )}
             </div>
             
             <button

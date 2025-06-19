@@ -26,21 +26,17 @@ service cloud.firestore {
     
     // Règles pour la collection users
     match /users/{userId} {
-      // Lecture : utilisateur peut lire son propre profil, admins peuvent lire tous
-      allow read: if request.auth != null && (
-        request.auth.uid == userId || isAdmin()
-      );
+      // L'utilisateur connecté peut lire son propre document
+      allow read: if request.auth != null && request.auth.uid == userId;
       
-      // Création : admins uniquement
-      allow create: if isAdmin();
+      // Création : tout utilisateur authentifié peut créer son propre document
+      allow create: if request.auth != null && request.auth.uid == userId;
       
-      // Mise à jour : utilisateur peut mettre à jour son profil, admins peuvent tout
-      allow update: if request.auth != null && (
-        request.auth.uid == userId || isAdmin()
-      );
+      // Mise à jour : utilisateur peut mettre à jour son profil
+      allow update: if request.auth != null && request.auth.uid == userId;
       
-      // Suppression : super admin uniquement
-      allow delete: if hasRole('super_admin');
+      // Suppression : uniquement par l'utilisateur lui-même
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
     
     // Règles pour la collection dishes
@@ -49,22 +45,22 @@ service cloud.firestore {
       allow read: if true;
       
       // Seuls les admins peuvent créer/modifier/supprimer
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false; // Temporairement désactivé jusqu'à l'implémentation des custom claims
     }
     
     // Règles pour la collection orders
     match /orders/{document} {
-      // Permet la lecture des commandes aux serveurs et admins
-      allow read: if isServer();
+      // Permet la lecture des commandes aux utilisateurs authentifiés
+      allow read: if request.auth != null;
       
       // Permet la création de commandes (même sans authentification pour les clients)
       allow create: if true;
       
-      // Permet la mise à jour des commandes aux serveurs et admins
-      allow update: if isServer();
+      // Permet la mise à jour des commandes aux utilisateurs authentifiés
+      allow update: if request.auth != null;
       
-      // Permet la suppression des commandes aux admins uniquement
-      allow delete: if isAdmin();
+      // Permet la suppression des commandes aux utilisateurs authentifiés
+      allow delete: if request.auth != null;
     }
     
     // Règles pour les autres collections (si nécessaire)

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useToast } from '@/components/ui/toast-provider';
-import { User, LogOut, Settings, ChevronDown, Utensils, Users, Shield } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, Utensils, Users, Shield, ShieldAlert } from 'lucide-react';
 
 export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +26,9 @@ export function UserMenu() {
     router.push(path);
     setIsOpen(false);
   };
+
+  // Vérifier si l'utilisateur est admin
+  const isAdmin = role === 'admin' || role === 'super_admin';
 
   if (!user) return null;
 
@@ -60,12 +63,22 @@ export function UserMenu() {
               )}
             </div>
             
+            {isAdmin && (
+              <button
+                onClick={() => handleNavigation('/admin-dashboard')}
+                className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <ShieldAlert className="h-4 w-4 mr-2" />
+                Dashboard Admin
+              </button>
+            )}
+            
             <button
               onClick={() => handleNavigation('/dashboard')}
               className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <Utensils className="h-4 w-4 mr-2" />
-              Dashboard Admin
+              Dashboard
             </button>
             
             <button

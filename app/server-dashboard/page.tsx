@@ -128,10 +128,12 @@ export default function ServerDashboardPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-restaurant-500 mr-3" />
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Dashboard Serveur
-                </h1>
+                <a href="/" className="flex items-center group hover:opacity-80 transition-opacity">
+                  <Users className="h-8 w-8 text-restaurant-500 mr-3 group-hover:text-restaurant-600 transition-colors" />
+                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Dashboard Serveur
+                  </h1>
+                </a>
               </div>
               <div className="flex items-center gap-4">
                 <button

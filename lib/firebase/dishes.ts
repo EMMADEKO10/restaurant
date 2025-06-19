@@ -23,6 +23,7 @@ export interface Dish {
   allergens?: string[]
   isAvailable: boolean
   userId: string
+  createdBy?: string
   createdAt?: any
   updatedAt?: any
 }
@@ -63,6 +64,25 @@ export const getUserDishes = async (userId: string) => {
     return dishes
   } catch (error) {
     console.error('Erreur lors de la récupération des plats:', error)
+    throw error
+  }
+}
+
+// Récupérer tous les plats (pour les admins)
+export const getAllDishes = async (): Promise<Dish[]> => {
+  try {
+    const dishesRef = collection(db, 'dishes')
+    const q = query(dishesRef, orderBy('createdAt', 'desc'))
+    const snapshot = await getDocs(q)
+    
+    const dishes: Dish[] = []
+    snapshot.forEach((doc) => {
+      dishes.push({ id: doc.id, ...doc.data() } as Dish)
+    })
+    
+    return dishes
+  } catch (error) {
+    console.error('Erreur lors de la récupération de tous les plats:', error)
     throw error
   }
 }

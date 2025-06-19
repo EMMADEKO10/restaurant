@@ -16,27 +16,31 @@ service cloud.firestore {
     
     // Fonction pour vérifier si c'est un admin
     function isAdmin() {
-      return hasRole('admin') || hasRole('super_admin');
+      return request.auth != null && 
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role.role == 'admin' || 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role.role == 'super_admin');
     }
     
     // Fonction pour vérifier si c'est un serveur
     function isServer() {
-      return hasRole('server') || isAdmin();
+      return request.auth != null && 
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role.role == 'server' || 
+              isAdmin());
     }
     
     // Règles pour la collection users
     match /users/{userId} {
-      // L'utilisateur connecté peut lire son propre document
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // L'utilisateur connecté peut lire son propre document ou les admins peuvent lire tous les documents
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       
       // Création : tout utilisateur authentifié peut créer son propre document
       allow create: if request.auth != null && request.auth.uid == userId;
       
-      // Mise à jour : utilisateur peut mettre à jour son profil
-      allow update: if request.auth != null && request.auth.uid == userId;
+      // Mise à jour : utilisateur peut mettre à jour son profil ou un admin peut le faire
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
       
-      // Suppression : uniquement par l'utilisateur lui-même
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      // Suppression : uniquement par l'utilisateur lui-même ou un admin
+      allow delete: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
     
     // Règles pour la collection dishes
@@ -45,7 +49,7 @@ service cloud.firestore {
       allow read: if true;
       
       // Seuls les admins peuvent créer/modifier/supprimer
-      allow create, update, delete: if false; // Temporairement désactivé jusqu'à l'implémentation des custom claims
+      allow create, update, delete: if isAdmin();
     }
     
     // Règles pour la collection orders

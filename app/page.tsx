@@ -12,7 +12,7 @@ export default function HomePage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [showDebug, setShowDebug] = useState(false)
+  // const [showDebug, setShowDebug] = useState(false)
 
   const handleNavigation = (path: string) => {
     setIsLoading(true)
@@ -42,19 +42,19 @@ export default function HomePage() {
           </p>
           
           {/* Bouton de debug temporaire */}
-          <button
+          {/* <button
             onClick={() => setShowDebug(!showDebug)}
             className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
           >
             {showDebug ? 'Masquer Debug' : 'Afficher Debug Firebase'}
-          </button>
+          </button> */}
         </div>
 
-        {showDebug && (
+        {/* {showDebug && (
           <div className="mb-8">
             <FirebaseTest />
           </div>
-        )}
+        )} */}
 
         <MenuSection />
       </main>

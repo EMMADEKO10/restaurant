@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChefHat, LogIn, UserPlus, ShoppingCart, Menu, X, User as UserIcon } from 'lucide-react'
+import { ChefHat, LogIn, UserPlus, ShoppingCart, Menu, X, User as UserIcon, LogOut } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import Link from 'next/link'
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth'
@@ -25,7 +25,7 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   
   // Utiliser le hook useAuth pour récupérer l'utilisateur et le rôle
-  const { user, role, loading } = useAuth()
+  const { user, role, loading, logout } = useAuth()
   
   console.log("Header - État actuel:", { user: user?.email, role, loading })
 
@@ -44,6 +44,15 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
     } else {
       // Ouvrir le modal panier si le panier est vide
       onCartToggle()
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/auth');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
     }
   }
 
@@ -123,6 +132,18 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
                 </button>
               </>
             )}
+
+            {/* Logout Button - Only shown if user IS logged in */}
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center px-3 lg:px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
+              >
+                <LogOut className="h-4 w-4 mr-1.5 lg:mr-2" />
+                <span className="hidden lg:inline">Déconnexion</span>
+                <span className="lg:hidden">Logout</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile Navigation */}
@@ -150,24 +171,22 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
               )}
             </button>
 
-            {/* Hamburger Menu Button - Only shown if user is NOT logged in */}
-            {!user && (
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:text-restaurant-600 dark:hover:text-restaurant-400 hover:bg-restaurant-50 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-              </button>
-            )}
+            {/* Hamburger Menu Button */}
+            <button
+              onClick={toggleMobileMenu}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:text-restaurant-600 dark:hover:text-restaurant-400 hover:bg-restaurant-50 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </button>
           </div>
         </div>
 
         {/* Mobile Menu Overlay */}
-        {isMobileMenuOpen && !user && (
+        {isMobileMenuOpen && (
           <div className="md:hidden">
             <div 
               className="fixed inset-0 bg-black bg-opacity-50 z-40"
@@ -175,29 +194,48 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
             />
             <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-lg z-50">
               <div className="px-4 py-3 space-y-3">
-                <button
-                  onClick={() => {
-                    onLogin()
-                    closeMobileMenu()
-                  }}
-                  className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
-                  disabled={isLoading}
-                >
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Connexion
-                </button>
-                
-                <button
-                  onClick={() => {
-                    onRegister()
-                    closeMobileMenu()
-                  }}
-                  className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-restaurant-500 to-restaurant-600 border border-transparent rounded-lg hover:from-restaurant-600 hover:to-restaurant-700 focus:ring-4 focus:ring-restaurant-300 dark:focus:ring-restaurant-800 transition-all duration-200 shadow-md"
-                  disabled={isLoading}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Inscription
-                </button>
+                {/* Auth Buttons - Only shown if user is NOT logged in */}
+                {!user && (
+                  <>
+                    <button
+                      onClick={() => {
+                        onLogin()
+                        closeMobileMenu()
+                      }}
+                      className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
+                      disabled={isLoading}
+                    >
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Connexion
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        onRegister()
+                        closeMobileMenu()
+                      }}
+                      className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-restaurant-500 to-restaurant-600 border border-transparent rounded-lg hover:from-restaurant-600 hover:to-restaurant-700 focus:ring-4 focus:ring-restaurant-300 dark:focus:ring-restaurant-800 transition-all duration-200 shadow-md"
+                      disabled={isLoading}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Inscription
+                    </button>
+                  </>
+                )}
+
+                {/* Logout Button - Only shown if user IS logged in */}
+                {user && (
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      closeMobileMenu()
+                    }}
+                    className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Déconnexion
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -308,7 +308,7 @@ export default function CreateDishForm({ isOpen, onClose, onSubmit, editingDish 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Prix (€) *
+                  Prix (FC) *
                 </label>
                 <input
                   type="number"
@@ -316,13 +316,13 @@ export default function CreateDishForm({ isOpen, onClose, onSubmit, editingDish 
                   value={formData.price}
                   onChange={handleInputChange}
                   min="0"
-                  step="0.01"
+                  step="1"
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-restaurant-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
                     formErrors.price 
                       ? 'border-red-500 dark:border-red-500' 
                       : 'border-gray-300 dark:border-gray-600'
                   }`}
-                  placeholder="14.90"
+                  placeholder="25000"
                 />
                 {formErrors.price && (
                   <p className="text-sm text-red-600 dark:text-red-400 mt-1">{formErrors.price}</p>

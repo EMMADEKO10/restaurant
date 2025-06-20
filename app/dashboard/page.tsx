@@ -34,10 +34,10 @@ export default function DashboardPage() {
         <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           Redirection en cours...
         </p>
-        <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400">
           Vous allez être redirigé vers votre espace approprié.
-        </p>
-      </div>
-    </div>
+                  </p>
+                </div>
+              </div>
   )
 }

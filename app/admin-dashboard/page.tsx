@@ -5,11 +5,12 @@ import { AuthGuard } from '@/components/auth/AuthGuard'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useRouter } from 'next/navigation'
-import { getAllDishes } from '@/lib/firebase/dishes'
+import { getAllDishes, createDish, updateDish, deleteDish, type Dish } from '@/lib/firebase/dishes'
 import { getAllOrders, type Order, type OrderItem } from '@/lib/firebase/orders'
 import { getFirestore, collection, getDocs } from 'firebase/firestore'
-import type { Dish } from '@/lib/firebase/dishes'
-import { Utensils, Users, CreditCard, Database, ShieldAlert, Loader2, Receipt, Coffee, Pizza } from 'lucide-react'
+import { Utensils, Users, CreditCard, Database, ShieldAlert, Loader2, Receipt, Coffee, Pizza, Plus } from 'lucide-react'
+import CreateDishForm from '@/components/dashboard/CreateDishForm'
+import DishList from '@/components/dashboard/DishList'
 
 // Interface pour les utilisateurs
 interface User {
@@ -32,6 +33,10 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'dishes' | 'users' | 'orders'>('dishes')
+  
+  // États pour la gestion des plats
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
+  const [editingDish, setEditingDish] = useState<Dish | null>(null)
   
   // Statistiques
   const [todayTotal, setTodayTotal] = useState(0)
@@ -148,6 +153,63 @@ export default function AdminDashboardPage() {
     }
   }
 
+  // Gestion des plats
+  const handleCreateDish = async (dishData: Omit<Dish, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newDish = await createDish({
+        ...dishData,
+        userId: user?.uid || ''
+      })
+      setDishes(prev => [newDish, ...prev])
+      setIsCreateFormOpen(false)
+      console.log('Nouveau plat créé:', newDish)
+    } catch (error) {
+      console.error('Erreur lors de la création du plat:', error)
+      throw error
+    }
+  }
+
+  const handleEditDish = (dish: Dish) => {
+    setEditingDish(dish)
+    setIsCreateFormOpen(true)
+  }
+
+  const handleUpdateDish = async (dishData: Omit<Dish, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingDish?.id) {
+      try {
+        await updateDish(editingDish.id, dishData)
+        setDishes(prev => prev.map(dish => 
+          dish.id === editingDish.id 
+            ? { ...dish, ...dishData, id: editingDish.id }
+            : dish
+        ))
+        setEditingDish(null)
+        setIsCreateFormOpen(false)
+        console.log('Plat mis à jour:', editingDish.id)
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour du plat:', error)
+        throw error
+      }
+    }
+  }
+
+  const handleDeleteDish = async (id: string) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce plat ?')) {
+      try {
+        await deleteDish(id)
+        setDishes(prev => prev.filter(dish => dish.id !== id))
+        console.log('Plat supprimé:', id)
+      } catch (error) {
+        console.error('Erreur lors de la suppression du plat:', error)
+      }
+    }
+  }
+
+  const handleCloseForm = () => {
+    setIsCreateFormOpen(false)
+    setEditingDish(null)
+  }
+
   // Si l'utilisateur n'est pas encore chargé ou n'est pas admin, afficher un chargement
   if (loading || !user || (role !== 'admin' && role !== 'super_admin')) {
     return (
@@ -254,7 +316,7 @@ export default function AdminDashboardPage() {
                     Total du jour
                   </p>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    {todayTotal.toFixed(2)} €
+                    {todayTotal.toLocaleString('fr-CD')} FC
                   </p>
                 </div>
               </div>
@@ -270,7 +332,7 @@ export default function AdminDashboardPage() {
                     Total boissons
                   </p>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    {drinksTotal.toFixed(2)} €
+                    {drinksTotal.toLocaleString('fr-CD')} FC
                   </p>
                 </div>
               </div>
@@ -286,10 +348,33 @@ export default function AdminDashboardPage() {
                     Total plats
                   </p>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    {foodTotal.toFixed(2)} €
+                    {foodTotal.toFixed(2)} FC
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Actions rapides
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button 
+                onClick={() => setIsCreateFormOpen(true)}
+                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-restaurant-100 dark:bg-restaurant-900/20 rounded-lg group-hover:bg-restaurant-200 dark:group-hover:bg-restaurant-900/40 transition-colors">
+                    <Plus className="h-5 w-5 text-restaurant-600 dark:text-restaurant-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white">Créer un plat</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Ajouter un nouveau plat au menu</p>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -350,57 +435,26 @@ export default function AdminDashboardPage() {
                 <>
                   {/* Dishes Tab */}
                   {activeTab === 'dishes' && (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700">
-                          <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Nom
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Prix
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Catégorie
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Créé par
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                          {dishes.map((dish) => (
-                            <tr key={dish.id}>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  {dish.imageUrl ? (
-                                    <img className="h-10 w-10 rounded-full object-cover mr-3" src={dish.imageUrl} alt={dish.name} />
-                                  ) : (
-                                    <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
-                                      <Utensils className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                                    </div>
-                                  )}
-                                  <div>
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white">{dish.name}</div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">{dish.description.substring(0, 50)}...</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900 dark:text-white">{dish.price.toFixed(2)} €</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400">
-                                  {dish.category}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {dish.createdBy || "Système"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div>
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          Gestion des plats et boissons
+                        </h3>
+                        <button
+                          onClick={() => setIsCreateFormOpen(true)}
+                          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-restaurant-600 hover:bg-restaurant-700 rounded-lg transition-colors"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Nouveau plat
+                        </button>
+                      </div>
+                      
+                      <DishList
+                        dishes={dishes}
+                        onEdit={handleEditDish}
+                        onDelete={handleDeleteDish}
+                        onCreateNew={() => setIsCreateFormOpen(true)}
+                      />
                     </div>
                   )}
                   
@@ -516,6 +570,14 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </main>
+
+        {/* Create/Edit Dish Form */}
+        <CreateDishForm
+          isOpen={isCreateFormOpen}
+          onClose={handleCloseForm}
+          onSubmit={editingDish ? handleUpdateDish : handleCreateDish}
+          editingDish={editingDish}
+        />
       </div>
     </AuthGuard>
   )

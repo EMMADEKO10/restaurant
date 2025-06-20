@@ -155,7 +155,7 @@ export default function DishList({ dishes, onEdit, onDelete, onCreateNew }: Dish
                     {dish.name}
                   </h4>
                   <span className="text-lg font-semibold text-restaurant-600 dark:text-restaurant-400">
-                    {dish.price.toFixed(2)}€
+                    {dish.price.toLocaleString('fr-CD')} FC
                   </span>
                 </div>
 

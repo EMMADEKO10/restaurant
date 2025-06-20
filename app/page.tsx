@@ -6,13 +6,11 @@ import { ChefHat, LogIn, UserPlus } from 'lucide-react'
 import Header from '@/components/homePage/Header'
 import MenuSection from '@/components/homePage/MenuSection'
 import Cart from '@/components/homePage/Cart'
-import FirebaseTest from '@/components/debug/FirebaseTest'
 
 export default function HomePage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
-  // const [showDebug, setShowDebug] = useState(false)
 
   const handleNavigation = (path: string) => {
     setIsLoading(true)
@@ -40,21 +38,7 @@ export default function HomePage() {
             Découvrez notre délicieuse sélection de plats et boissons. 
             Ajoutez vos favoris au panier et passez votre commande facilement.
           </p>
-          
-          {/* Bouton de debug temporaire */}
-          {/* <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            {showDebug ? 'Masquer Debug' : 'Afficher Debug Firebase'}
-          </button> */}
         </div>
-
-        {/* {showDebug && (
-          <div className="mb-8">
-            <FirebaseTest />
-          </div>
-        )} */}
 
         <MenuSection />
       </main>

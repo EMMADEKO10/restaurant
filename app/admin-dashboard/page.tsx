@@ -6,9 +6,10 @@ import { UserMenu } from '@/components/auth/UserMenu'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { getAllDishes } from '@/lib/firebase/dishes'
+import { getAllOrders, type Order, type OrderItem } from '@/lib/firebase/orders'
 import { getFirestore, collection, getDocs } from 'firebase/firestore'
 import type { Dish } from '@/lib/firebase/dishes'
-import { Utensils, Users, CreditCard, Database, ShieldAlert, Loader2 } from 'lucide-react'
+import { Utensils, Users, CreditCard, Database, ShieldAlert, Loader2, Receipt, Coffee, Pizza } from 'lucide-react'
 
 // Interface pour les utilisateurs
 interface User {
@@ -22,26 +23,20 @@ interface User {
   createdAt: any;
 }
 
-// Interface pour les paiements
-interface Payment {
-  id: string;
-  amount: number;
-  status: string;
-  customerName: string;
-  customerEmail: string;
-  createdAt: any;
-  items: any[];
-}
-
 export default function AdminDashboardPage() {
   const { user, role, loading } = useAuth()
   const router = useRouter()
   
   const [dishes, setDishes] = useState<Dish[]>([])
   const [users, setUsers] = useState<User[]>([])
-  const [payments, setPayments] = useState<Payment[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'dishes' | 'users' | 'payments'>('dishes')
+  const [activeTab, setActiveTab] = useState<'dishes' | 'users' | 'orders'>('dishes')
+  
+  // Statistiques
+  const [todayTotal, setTodayTotal] = useState(0)
+  const [drinksTotal, setDrinksTotal] = useState(0)
+  const [foodTotal, setFoodTotal] = useState(0)
 
   // Vérifier que l'utilisateur est un admin
   useEffect(() => {
@@ -69,38 +64,12 @@ export default function AdminDashboardPage() {
           })) as User[]
           setUsers(usersData)
           
-          // Charger les paiements (simulation pour l'instant)
-          // Dans un cas réel, vous feriez une requête à votre système de paiement
-          const mockPayments: Payment[] = [
-            {
-              id: '1',
-              amount: 45.90,
-              status: 'completed',
-              customerName: 'Jean Dupont',
-              customerEmail: 'jean@exemple.com',
-              createdAt: new Date(),
-              items: [{ name: 'Burger Deluxe', quantity: 2 }]
-            },
-            {
-              id: '2',
-              amount: 32.50,
-              status: 'completed',
-              customerName: 'Marie Martin',
-              customerEmail: 'marie@exemple.com',
-              createdAt: new Date(),
-              items: [{ name: 'Pizza Margherita', quantity: 1 }]
-            },
-            {
-              id: '3',
-              amount: 18.90,
-              status: 'pending',
-              customerName: 'Lucas Bernard',
-              customerEmail: 'lucas@exemple.com',
-              createdAt: new Date(),
-              items: [{ name: 'Salade César', quantity: 1 }]
-            }
-          ]
-          setPayments(mockPayments)
+          // Charger les commandes
+          const allOrders = await getAllOrders()
+          setOrders(allOrders)
+          
+          // Calculer les statistiques
+          calculateOrderStatistics(allOrders)
           
         } catch (error) {
           console.error('Erreur lors du chargement des données:', error)
@@ -112,6 +81,72 @@ export default function AdminDashboardPage() {
 
     loadData()
   }, [user, role])
+
+  // Calculer les statistiques des commandes
+  const calculateOrderStatistics = (ordersList: Order[]) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    let todayTotalAmount = 0
+    let drinksTotalAmount = 0
+    let foodTotalAmount = 0
+    
+    ordersList.forEach(order => {
+      // Vérifier si la commande est d'aujourd'hui
+      const orderDate = order.orderTime?.toDate ? order.orderTime.toDate() : new Date(order.orderTime)
+      const isToday = orderDate >= today
+      
+      if (isToday && (order.status === 'completed' || order.status === 'ready')) {
+        todayTotalAmount += order.total
+        
+        // Calculer le total par catégorie
+        order.items.forEach((item: OrderItem) => {
+          if (item.category === 'drink') {
+            drinksTotalAmount += item.price * item.quantity
+          } else {
+            foodTotalAmount += item.price * item.quantity
+          }
+        })
+      }
+    })
+    
+    setTodayTotal(todayTotalAmount)
+    setDrinksTotal(drinksTotalAmount)
+    setFoodTotal(foodTotalAmount)
+  }
+
+  // Formater la date
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'N/A'
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  // Obtenir la couleur du statut
+  const getStatusColor = (status: Order['status']) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400'
+      case 'confirmed':
+        return 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400'
+      case 'preparing':
+        return 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-400'
+      case 'ready':
+        return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400'
+      case 'completed':
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+      case 'cancelled':
+        return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400'
+      default:
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+    }
+  }
 
   // Si l'utilisateur n'est pas encore chargé ou n'est pas admin, afficher un chargement
   if (loading || !user || (role !== 'admin' && role !== 'super_admin')) {
@@ -152,7 +187,7 @@ export default function AdminDashboardPage() {
               Administration du système
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Gérez les plats, les utilisateurs et les paiements
+              Gérez les plats, les utilisateurs et les commandes
             </p>
           </div>
 
@@ -193,14 +228,65 @@ export default function AdminDashboardPage() {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                  <Receipt className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Commandes
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {orders.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Revenue Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
                   <CreditCard className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Paiements
+                    Total du jour
                   </p>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    {payments.length}
+                    {todayTotal.toFixed(2)} €
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                  <Coffee className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Total boissons
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {drinksTotal.toFixed(2)} €
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                  <Pizza className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Total plats
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {foodTotal.toFixed(2)} €
                   </p>
                 </div>
               </div>
@@ -238,16 +324,16 @@ export default function AdminDashboardPage() {
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('payments')}
+                  onClick={() => setActiveTab('orders')}
                   className={`py-4 px-6 font-medium text-sm border-b-2 ${
-                    activeTab === 'payments'
+                    activeTab === 'orders'
                       ? 'border-restaurant-500 text-restaurant-600 dark:text-restaurant-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center">
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Paiements
+                    <Receipt className="h-4 w-4 mr-2" />
+                    Commandes
                   </div>
                 </button>
               </nav>
@@ -370,17 +456,17 @@ export default function AdminDashboardPage() {
                     </div>
                   )}
                   
-                  {/* Payments Tab */}
-                  {activeTab === 'payments' && (
+                  {/* Orders Tab */}
+                  {activeTab === 'orders' && (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700">
                           <tr>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              ID Transaction
+                              N° Commande
                             </th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Client
+                              Table
                             </th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                               Montant
@@ -394,31 +480,30 @@ export default function AdminDashboardPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                          {payments.map((payment) => (
-                            <tr key={payment.id}>
+                          {orders.map((order) => (
+                            <tr key={order.id}>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                #{payment.id}
+                                #{order.orderNumber}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900 dark:text-white">{payment.customerName}</div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">{payment.customerEmail}</div>
+                                <div className="text-sm text-gray-900 dark:text-white">Table {order.table.number}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">{order.table.capacity} personnes</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {payment.amount.toFixed(2)} €
+                                {order.total.toFixed(2)} €
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  payment.status === 'completed'
-                                    ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400'
-                                    : payment.status === 'pending'
-                                    ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400'
-                                    : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400'
-                                }`}>
-                                  {payment.status}
+                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                                  {order.status === 'pending' && 'En attente'}
+                                  {order.status === 'confirmed' && 'Confirmée'}
+                                  {order.status === 'preparing' && 'En préparation'}
+                                  {order.status === 'ready' && 'Prête'}
+                                  {order.status === 'completed' && 'Servie'}
+                                  {order.status === 'cancelled' && 'Annulée'}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {payment.createdAt.toLocaleDateString()}
+                                {formatDate(order.orderTime)}
                               </td>
                             </tr>
                           ))}

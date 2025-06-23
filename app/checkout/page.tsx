@@ -12,7 +12,10 @@ import {
   Users, 
   CheckCircle, 
   CreditCard,
-  Receipt
+  Receipt,
+  Plus,
+  Minus,
+  Trash2
 } from 'lucide-react'
 import Header from '@/components/homePage/Header'
 
@@ -26,7 +29,7 @@ interface Table {
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { state, clearCart } = useCart()
+  const { state, clearCart, updateQuantity, removeItem } = useCart()
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -64,6 +67,14 @@ export default function CheckoutPage() {
   const handleTableSelect = (table: Table) => {
     setSelectedTable(table)
     setCurrentStep(2)
+  }
+
+  const handleQuantityChange = (id: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeItem(id)
+    } else {
+      updateQuantity(id, newQuantity)
+    }
   }
 
   const handleSubmitOrder = async () => {
@@ -285,14 +296,46 @@ export default function CheckoutPage() {
                 
                 <div className="space-y-3 mb-6">
                   {state.items.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-500">Quantité: {item.quantity}</p>
+                    <div key={item.id} className="flex flex-col space-y-2 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{item.name}</p>
+                          <p className="text-sm text-gray-500">Prix unitaire: {item.price.toLocaleString('fr-CD')} FC</p>
+                        </div>
+                        <p className="font-medium text-gray-900">
+                          {(item.price * item.quantity).toLocaleString('fr-CD')} FC
+                        </p>
                       </div>
-                      <p className="font-medium text-gray-900">
-                        {(item.price * item.quantity).toFixed(2)} €
-                      </p>
+                      
+                      {/* Contrôles de quantité */}
+                      <div className="flex items-center justify-between border-t pt-2">
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
+                            aria-label="Diminuer la quantité"
+                          >
+                            <Minus className="h-4 w-4 text-gray-600" />
+                          </button>
+                          <span className="text-sm font-medium text-gray-900 min-w-[2rem] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
+                            aria-label="Augmenter la quantité"
+                          >
+                            <Plus className="h-4 w-4 text-gray-600" />
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="p-1 hover:bg-red-100 rounded transition-colors"
+                          aria-label="Supprimer l'article"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -300,7 +343,7 @@ export default function CheckoutPage() {
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-600">Sous-total</span>
-                    <span className="font-medium">{state.total.toFixed(2)} €</span>
+                    <span className="font-medium">{state.total.toLocaleString('fr-CD')} FC</span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-600">Service</span>
@@ -308,7 +351,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between items-center text-lg font-semibold text-gray-900">
                     <span>Total</span>
-                    <span>{state.total.toFixed(2)} €</span>
+                    <span>{state.total.toLocaleString('fr-CD')} FC</span>
                   </div>
                 </div>
 

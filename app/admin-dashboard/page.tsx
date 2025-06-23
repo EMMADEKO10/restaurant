@@ -11,6 +11,7 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore'
 import { Utensils, Users, CreditCard, Database, ShieldAlert, Loader2, Receipt, Coffee, Pizza, Plus } from 'lucide-react'
 import CreateDishForm from '@/components/dashboard/CreateDishForm'
 import DishList from '@/components/dashboard/DishList'
+import { updateUserRole } from '@/lib/firebase/auth'
 
 // Interface pour les utilisateurs
 interface User {
@@ -42,6 +43,10 @@ export default function AdminDashboardPage() {
   const [todayTotal, setTodayTotal] = useState(0)
   const [drinksTotal, setDrinksTotal] = useState(0)
   const [foodTotal, setFoodTotal] = useState(0)
+
+  // États pour la gestion des utilisateurs
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [selectedRole, setSelectedRole] = useState<string>('')
 
   // Vérifier que l'utilisateur est un admin
   useEffect(() => {
@@ -210,6 +215,41 @@ export default function AdminDashboardPage() {
     setEditingDish(null)
   }
 
+  // Gestion des utilisateurs
+  const handleEditUser = (user: User) => {
+    setEditingUser(user)
+    setSelectedRole(user.role.role)
+  }
+
+  const handleUpdateUserRole = async () => {
+    if (!editingUser || !selectedRole) return
+
+    try {
+      await updateUserRole(editingUser.id, selectedRole as any)
+      
+      // Mettre à jour l'état local des utilisateurs
+      setUsers(prev => prev.map(u => {
+        if (u.id === editingUser.id) {
+          return {
+            ...u,
+            role: {
+              ...u.role,
+              role: selectedRole,
+              permissions: [] // Les permissions seront mises à jour côté serveur
+            }
+          }
+        }
+        return u
+      }))
+      
+      setEditingUser(null)
+      alert('Rôle mis à jour avec succès!')
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du rôle:', error)
+      alert('Erreur lors de la mise à jour du rôle')
+    }
+  }
+
   // Si l'utilisateur n'est pas encore chargé ou n'est pas admin, afficher un chargement
   if (loading || !user || (role !== 'admin' && role !== 'super_admin')) {
     return (
@@ -348,7 +388,7 @@ export default function AdminDashboardPage() {
                     Total plats
                   </p>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    {foodTotal.toFixed(2)} FC
+                    {foodTotal.toLocaleString('fr-CD')} FC
                   </p>
                 </div>
               </div>
@@ -473,6 +513,9 @@ export default function AdminDashboardPage() {
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                               Date d'inscription
                             </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -502,6 +545,14 @@ export default function AdminDashboardPage() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 {user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : "N/A"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <button
+                                  onClick={() => handleEditUser(user)}
+                                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                                >
+                                  Modifier le rôle
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -578,6 +629,65 @@ export default function AdminDashboardPage() {
           onSubmit={editingDish ? handleUpdateDish : handleCreateDish}
           editingDish={editingDish}
         />
+
+        {/* Edit User Role Modal */}
+        {editingUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Modifier le rôle de {editingUser.displayName}
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Rôle actuel
+                  </label>
+                  <div className="text-sm text-gray-900 dark:text-white mb-4">
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      editingUser.role.role === 'admin' || editingUser.role.role === 'super_admin'
+                        ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400'
+                        : editingUser.role.role === 'server'
+                        ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                    }`}>
+                      {editingUser.role.role}
+                    </span>
+                  </div>
+                  
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nouveau rôle
+                  </label>
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-restaurant-500 focus:border-transparent"
+                  >
+                    <option value="client">Client</option>
+                    <option value="server">Serveur</option>
+                    <option value="admin">Admin</option>
+                    <option value="super_admin">Super Admin</option>
+                  </select>
+                </div>
+                
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    onClick={() => setEditingUser(null)}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleUpdateUserRole}
+                    className="px-4 py-2 bg-restaurant-600 text-white rounded-lg hover:bg-restaurant-700 transition-colors"
+                  >
+                    Mettre à jour
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AuthGuard>
   )

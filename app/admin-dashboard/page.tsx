@@ -436,74 +436,87 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Tabs */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-8">
-            <div className="border-b border-gray-200 dark:border-gray-700">
-              <nav className="flex -mb-px">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-8 overflow-hidden">
+            {/* Tabs Navigation - Desktop & Mobile */}
+            <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto scrollbar-hide">
+              <nav className="flex -mb-px min-w-max">
                 <button
                   onClick={() => setActiveTab('dishes')}
-                  className={`py-4 px-6 font-medium text-sm border-b-2 ${
+                  className={`py-4 px-6 font-medium text-sm border-b-2 transition-all duration-200 ${
                     activeTab === 'dishes'
-                      ? 'border-restaurant-500 text-restaurant-600 dark:text-restaurant-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      ? 'border-restaurant-500 text-restaurant-600 dark:text-restaurant-400 bg-restaurant-50 dark:bg-restaurant-900/10'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
+                  aria-current={activeTab === 'dishes' ? 'page' : undefined}
                 >
                   <div className="flex items-center">
-                    <Utensils className="h-4 w-4 mr-2" />
-                    Plats
+                    <Utensils className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Plats</span>
                   </div>
                 </button>
                 <button
                   onClick={() => setActiveTab('users')}
-                  className={`py-4 px-6 font-medium text-sm border-b-2 ${
+                  className={`py-4 px-6 font-medium text-sm border-b-2 transition-all duration-200 ${
                     activeTab === 'users'
-                      ? 'border-restaurant-500 text-restaurant-600 dark:text-restaurant-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      ? 'border-restaurant-500 text-restaurant-600 dark:text-restaurant-400 bg-restaurant-50 dark:bg-restaurant-900/10'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
+                  aria-current={activeTab === 'users' ? 'page' : undefined}
                 >
                   <div className="flex items-center">
-                    <Users className="h-4 w-4 mr-2" />
-                    Utilisateurs
+                    <Users className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Utilisateurs</span>
                   </div>
                 </button>
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className={`py-4 px-6 font-medium text-sm border-b-2 ${
+                  className={`py-4 px-6 font-medium text-sm border-b-2 transition-all duration-200 ${
                     activeTab === 'orders'
-                      ? 'border-restaurant-500 text-restaurant-600 dark:text-restaurant-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      ? 'border-restaurant-500 text-restaurant-600 dark:text-restaurant-400 bg-restaurant-50 dark:bg-restaurant-900/10'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
+                  aria-current={activeTab === 'orders' ? 'page' : undefined}
                 >
                   <div className="flex items-center">
-                    <Receipt className="h-4 w-4 mr-2" />
-                    Commandes
+                    <Receipt className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Commandes</span>
                   </div>
                 </button>
               </nav>
             </div>
             
-            {/* Tab Content */}
-            <div className="p-6">
+            {/* Mobile Tab Labels */}
+            <div className="sm:hidden bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {activeTab === 'dishes' && 'Gestion des plats'}
+                {activeTab === 'users' && 'Gestion des utilisateurs'}
+                {activeTab === 'orders' && 'Gestion des commandes'}
+              </h3>
+            </div>
+            
+            {/* Tab Content with smooth transitions */}
+            <div className="p-4 sm:p-6">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-restaurant-600"></div>
                   <span className="ml-3 text-gray-600 dark:text-gray-400">Chargement des données...</span>
                 </div>
               ) : (
-                <>
+                <div className="transition-opacity duration-200 ease-in-out">
                   {/* Dishes Tab */}
                   {activeTab === 'dishes' && (
                     <div>
-                      <div className="flex justify-between items-center mb-6">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                           Gestion des plats et boissons
                         </h3>
-                        <button
+                        {/* <button
                           onClick={() => setIsCreateFormOpen(true)}
-                          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-restaurant-600 hover:bg-restaurant-700 rounded-lg transition-colors"
+                          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-restaurant-600 hover:bg-restaurant-700 rounded-lg transition-colors shadow-sm hover:shadow"
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Nouveau plat
-                        </button>
+                        </button> */}
                       </div>
                       
                       <DishList
@@ -517,123 +530,146 @@ export default function AdminDashboardPage() {
                   
                   {/* Users Tab */}
                   {activeTab === 'users' && (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700">
-                          <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Utilisateur
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Rôle
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Date d'inscription
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                          {users.map((user) => (
-                            <tr key={user.id}>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
-                                    <Users className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                                  </div>
-                                  <div>
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white">{user.displayName}</div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  user.role.role === 'admin' || user.role.role === 'super_admin'
-                                    ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400'
-                                    : user.role.role === 'server'
-                                    ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                                }`}>
-                                  {user.role.role}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : "N/A"}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <button
-                                  onClick={() => handleEditUser(user)}
-                                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-                                >
-                                  Modifier le rôle
-                                </button>
-                              </td>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 hidden sm:block">
+                        Gestion des utilisateurs
+                      </h3>
+                      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                          <thead className="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                              <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Utilisateur
+                              </th>
+                              <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Rôle
+                              </th>
+                              <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Date d'inscription
+                              </th>
+                              <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Actions
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {users.map((user) => (
+                              <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
+                                      <Users className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500" />
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-900 dark:text-white">{user.displayName}</div>
+                                      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                    user.role.role === 'admin' || user.role.role === 'super_admin'
+                                      ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400'
+                                      : user.role.role === 'server'
+                                      ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                                  }`}>
+                                    {user.role.role}
+                                  </span>
+                                </td>
+                                <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                  {user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : "N/A"}
+                                </td>
+                                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                  <button
+                                    onClick={() => handleEditUser(user)}
+                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm transition-colors"
+                                  >
+                                    Modifier
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
                   
                   {/* Orders Tab */}
                   {activeTab === 'orders' && (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700">
-                          <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              N° Commande
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Table
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Montant
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Statut
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Date
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                          {orders.map((order) => (
-                            <tr key={order.id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                #{order.orderNumber}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900 dark:text-white">Table {order.table.number}</div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">{order.table.capacity} personnes</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {order.total.toFixed(2)} €
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                                  {order.status === 'pending' && 'En attente'}
-                                  {order.status === 'confirmed' && 'Confirmée'}
-                                  {order.status === 'preparing' && 'En préparation'}
-                                  {order.status === 'ready' && 'Prête'}
-                                  {order.status === 'completed' && 'Servie'}
-                                  {order.status === 'cancelled' && 'Annulée'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {formatDate(order.orderTime)}
-                              </td>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 hidden sm:block">
+                        Gestion des commandes
+                      </h3>
+                      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                          <thead className="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                              <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                N° Commande
+                              </th>
+                              <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Table
+                              </th>
+                              <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Montant
+                              </th>
+                              <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Statut
+                              </th>
+                              <th scope="col" className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Date
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {orders.map((order) => (
+                              <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                  #{order.orderNumber}
+                                </td>
+                                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 dark:text-white">Table {order.table.number}</div>
+                                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{order.table.capacity} personnes</div>
+                                </td>
+                                <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                  {order.total.toLocaleString('fr-CD')} FC
+                                </td>
+                                <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap">
+                                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                                    {order.status === 'pending' && 'En attente'}
+                                    {order.status === 'confirmed' && 'Confirmée'}
+                                    {order.status === 'preparing' && 'En préparation'}
+                                    {order.status === 'ready' && 'Prête'}
+                                    {order.status === 'completed' && 'Servie'}
+                                    {order.status === 'cancelled' && 'Annulée'}
+                                  </span>
+                                </td>
+                                <td className="hidden sm:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                  {formatDate(order.orderTime)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      {/* Mobile Order Status Legend */}
+                      <div className="mt-4 sm:hidden">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Légende des statuts:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('pending')}`}>En attente</span>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('confirmed')}`}>Confirmée</span>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('preparing')}`}>En préparation</span>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('ready')}`}>Prête</span>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('completed')}`}>Servie</span>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('cancelled')}`}>Annulée</span>
+                        </div>
+                      </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>

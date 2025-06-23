@@ -188,7 +188,7 @@ function OrderDetailsContent() {
                 <MapPin className="h-5 w-5 text-blue-500 mr-3 mt-0.5" />
                 <div>
                   <p className="font-medium text-gray-900">Adresse</p>
-                  <p className="text-sm text-gray-600">123 Rue de la Gastronomie, 75001 Paris</p>
+                  <p className="text-sm text-gray-600">Av/Avenue de la Justice, C/Gombe, N°75, V/Kinshasa</p>
                 </div>
               </div>
             </div>

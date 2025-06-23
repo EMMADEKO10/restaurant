@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChefHat, LogIn, UserPlus, ShoppingCart, Menu, X, User as UserIcon, LogOut } from 'lucide-react'
+import { ChefHat, LogIn, UserPlus, ShoppingCart, Menu, X, User as UserIcon, LogOut, LayoutDashboard } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import Link from 'next/link'
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth'
@@ -56,6 +56,17 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
     }
   }
 
+  const handleDashboardClick = () => {
+    if (role === 'admin' || role === 'super_admin') {
+      router.push('/admin-dashboard');
+    } else if (role === 'server') {
+      router.push('/server-dashboard');
+    }
+  }
+
+  // Déterminer si l'utilisateur a accès à un dashboard
+  const hasDashboardAccess = role === 'admin' || role === 'super_admin' || role === 'server';
+
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 dark:bg-gray-800/95 dark:border-gray-700 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -93,6 +104,18 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
                   {role}
                 </span>
               </div>
+            )}
+            
+            {/* Dashboard Button - Only shown if user has dashboard access */}
+            {user && hasDashboardAccess && (
+              <button
+                onClick={handleDashboardClick}
+                className="inline-flex items-center px-3 lg:px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 border border-transparent rounded-lg hover:from-blue-600 hover:to-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-all duration-200 shadow-md"
+              >
+                <LayoutDashboard className="h-4 w-4 mr-1.5 lg:mr-2" />
+                <span className="hidden lg:inline">Dashboard</span>
+                <span className="lg:hidden">Dashboard</span>
+              </button>
             )}
             
             {/* Cart Button */}
@@ -194,6 +217,20 @@ export default function Header({ onLogin, onRegister, onCartToggle, isLoading }:
             />
             <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-lg z-50">
               <div className="px-4 py-3 space-y-3">
+                {/* Dashboard Button Mobile - Only shown if user has dashboard access */}
+                {user && hasDashboardAccess && (
+                  <button
+                    onClick={() => {
+                      handleDashboardClick();
+                      closeMobileMenu();
+                    }}
+                    className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 border border-transparent rounded-lg hover:from-blue-600 hover:to-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-all duration-200 shadow-md"
+                  >
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Accéder au Dashboard
+                  </button>
+                )}
+                
                 {/* Auth Buttons - Only shown if user is NOT logged in */}
                 {!user && (
                   <>

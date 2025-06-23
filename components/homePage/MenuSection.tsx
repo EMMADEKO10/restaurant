@@ -211,7 +211,7 @@ export default function MenuSection() {
                   {item.name}
                 </h3>
                 <span className="text-xl font-bold text-restaurant-600 dark:text-restaurant-400">
-                  {item.price.toFixed(2)}€
+                  {item.price.toLocaleString('fr-CD')} FC
                 </span>
               </div>
               

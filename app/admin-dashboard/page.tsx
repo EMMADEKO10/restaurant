@@ -101,23 +101,40 @@ export default function AdminDashboardPage() {
     let drinksTotalAmount = 0
     let foodTotalAmount = 0
     
+    console.log('Nombre de commandes à analyser:', ordersList.length)
+    
     ordersList.forEach(order => {
       // Vérifier si la commande est d'aujourd'hui
-      const orderDate = order.orderTime?.toDate ? order.orderTime.toDate() : new Date(order.orderTime)
-      const isToday = orderDate >= today
+      const orderDate = order.orderTime?.toDate ? order.orderTime.toDate() : 
+                        order.orderTime?.seconds ? new Date(order.orderTime.seconds * 1000) : 
+                        new Date(order.orderTime)
       
-      if (isToday && (order.status === 'completed' || order.status === 'ready')) {
-        todayTotalAmount += order.total
+      // Convertir les deux dates en chaînes de caractères pour une comparaison de date uniquement
+      const orderDateStr = orderDate.toDateString()
+      const todayStr = today.toDateString()
+      const isToday = orderDateStr === todayStr
+      
+      console.log('Commande ID:', order.id, 'Date:', orderDateStr, 'Est aujourd\'hui:', isToday, 'Status:', order.status, 'Total:', order.total)
+      
+      if (isToday && (order.status === 'completed' || order.status === 'ready' || order.status === 'confirmed' || order.status === 'preparing')) {
+        todayTotalAmount += Number(order.total) || 0
         
         // Calculer le total par catégorie
         order.items.forEach((item: OrderItem) => {
+          const itemTotal = Number(item.price) * Number(item.quantity)
           if (item.category === 'drink') {
-            drinksTotalAmount += item.price * item.quantity
+            drinksTotalAmount += itemTotal
           } else {
-            foodTotalAmount += item.price * item.quantity
+            foodTotalAmount += itemTotal
           }
         })
       }
+    })
+    
+    console.log('Statistiques calculées:', {
+      todayTotal: todayTotalAmount,
+      drinksTotal: drinksTotalAmount,
+      foodTotal: foodTotalAmount
     })
     
     setTodayTotal(todayTotalAmount)

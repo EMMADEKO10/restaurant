@@ -94,8 +94,8 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                           {item.description}
                         </p>
                       )}
-                      <p className="text-sm font-medium text-gray-900">
-                        {(item.price * item.quantity).toFixed(2)} €
+                      <p className="font-medium text-gray-900">
+                        {(item.price * item.quantity).toLocaleString('fr-CD')} FC
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -135,7 +135,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                   Total
                 </span>
                 <span className="text-lg font-semibold text-gray-900">
-                  {state.total.toFixed(2)} €
+                  {state.total.toLocaleString('fr-CD')} FC
                 </span>
               </div>
               

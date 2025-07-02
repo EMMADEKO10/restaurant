@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { getAllDishes, createDish, updateDish, deleteDish, type Dish } from '@/lib/firebase/dishes'
 import { getAllOrders, type Order, type OrderItem } from '@/lib/firebase/orders'
 import { getFirestore, collection, getDocs } from 'firebase/firestore'
-import { Utensils, Users, CreditCard, Database, ShieldAlert, Loader2, Receipt, Coffee, Pizza, Plus } from 'lucide-react'
+import { Utensils, Users, CreditCard, Database, ShieldAlert, Loader2, Receipt, Coffee, Pizza, Plus, TrendingUp } from 'lucide-react'
 import CreateDishForm from '@/components/dashboard/CreateDishForm'
 import DishList from '@/components/dashboard/DishList'
 import { updateUserRole } from '@/lib/firebase/auth'
@@ -25,6 +25,15 @@ interface User {
   createdAt: any;
 }
 
+// Interface pour la traçabilité des produits
+interface ProductSales {
+  name: string;
+  quantity: number;
+  totalRevenue: number;
+  category: string;
+  averagePrice: number;
+}
+
 export default function AdminDashboardPage() {
   const { user, role, loading } = useAuth()
   const router = useRouter()
@@ -33,7 +42,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<User[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'dishes' | 'users' | 'orders'>('dishes')
+  const [activeTab, setActiveTab] = useState<'dishes' | 'users' | 'orders' | 'tracking'>('dishes')
   
   // États pour la gestion des plats
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
@@ -43,6 +52,9 @@ export default function AdminDashboardPage() {
   const [todayTotal, setTodayTotal] = useState(0)
   const [drinksTotal, setDrinksTotal] = useState(0)
   const [foodTotal, setFoodTotal] = useState(0)
+  
+  // Nouvelles statistiques pour la traçabilité des produits
+  const [productSales, setProductSales] = useState<ProductSales[]>([])
 
   // États pour la gestion des utilisateurs
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -80,6 +92,9 @@ export default function AdminDashboardPage() {
           
           // Calculer les statistiques
           calculateOrderStatistics(allOrders)
+          
+          // Calculer les statistiques de traçabilité des produits
+          calculateProductSales(allOrders)
           
         } catch (error) {
           console.error('Erreur lors du chargement des données:', error)
@@ -140,6 +155,52 @@ export default function AdminDashboardPage() {
     setTodayTotal(todayTotalAmount)
     setDrinksTotal(drinksTotalAmount)
     setFoodTotal(foodTotalAmount)
+  }
+
+  // Calculer les statistiques de traçabilité des produits
+  const calculateProductSales = (ordersList: Order[]) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    const productMap = new Map<string, ProductSales>()
+    
+    ordersList.forEach(order => {
+      // Vérifier si la commande est d'aujourd'hui
+      const orderDate = order.orderTime?.toDate ? order.orderTime.toDate() : 
+                        order.orderTime?.seconds ? new Date(order.orderTime.seconds * 1000) : 
+                        new Date(order.orderTime)
+      
+      const orderDateStr = orderDate.toDateString()
+      const todayStr = today.toDateString()
+      const isToday = orderDateStr === todayStr
+      
+      // Ne compter que les commandes d'aujourd'hui qui ne sont pas annulées
+      if (isToday && order.status !== 'cancelled') {
+        order.items.forEach((item: OrderItem) => {
+          const existingProduct = productMap.get(item.name)
+          
+          if (existingProduct) {
+            existingProduct.quantity += item.quantity
+            existingProduct.totalRevenue += item.price * item.quantity
+            existingProduct.averagePrice = existingProduct.totalRevenue / existingProduct.quantity
+          } else {
+            productMap.set(item.name, {
+              name: item.name,
+              quantity: item.quantity,
+              totalRevenue: item.price * item.quantity,
+              category: item.category,
+              averagePrice: item.price
+            })
+          }
+        })
+      }
+    })
+    
+    // Convertir la Map en tableau et trier par quantité décroissante
+    const sortedProducts = Array.from(productMap.values()).sort((a, b) => b.quantity - a.quantity)
+    setProductSales(sortedProducts)
+    
+    console.log('Statistiques des produits calculées:', sortedProducts)
   }
 
   // Formater la date
@@ -482,6 +543,20 @@ export default function AdminDashboardPage() {
                     <span className="hidden sm:inline">Commandes</span>
                   </div>
                 </button>
+                <button
+                  onClick={() => setActiveTab('tracking')}
+                  className={`py-4 px-6 font-medium text-sm border-b-2 transition-all duration-200 ${
+                    activeTab === 'tracking'
+                      ? 'border-restaurant-500 text-restaurant-600 dark:text-restaurant-400 bg-restaurant-50 dark:bg-restaurant-900/10'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  aria-current={activeTab === 'tracking' ? 'page' : undefined}
+                >
+                  <div className="flex items-center">
+                    <TrendingUp className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Traçabilité</span>
+                  </div>
+                </button>
               </nav>
             </div>
             
@@ -491,6 +566,7 @@ export default function AdminDashboardPage() {
                 {activeTab === 'dishes' && 'Gestion des plats'}
                 {activeTab === 'users' && 'Gestion des utilisateurs'}
                 {activeTab === 'orders' && 'Gestion des commandes'}
+                {activeTab === 'tracking' && 'Traçabilité'}
               </h3>
             </div>
             
@@ -633,7 +709,7 @@ export default function AdminDashboardPage() {
                                   <div className="text-sm text-gray-900 dark:text-white">Table {order.table.number}</div>
                                   <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{order.table.capacity} personnes</div>
                                 </td>
-                                <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                   {order.total.toLocaleString('fr-CD')} FC
                                 </td>
                                 <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap">
@@ -667,6 +743,180 @@ export default function AdminDashboardPage() {
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('cancelled')}`}>Annulée</span>
                         </div>
                       </div>
+                    </div>
+                  )}
+                  
+                  {/* Tracking Tab */}
+                  {activeTab === 'tracking' && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 hidden sm:block">
+                        Traçabilité des produits - Aujourd'hui
+                      </h3>
+                      
+                      {productSales.length === 0 ? (
+                        <div className="text-center py-12">
+                          <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Aucune vente enregistrée aujourd'hui
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {/* Résumé des ventes */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4">
+                              <div className="flex items-center">
+                                <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg">
+                                  <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="ml-3">
+                                  <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                                    Produits différents
+                                  </p>
+                                  <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                                    {productSales.length}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4">
+                              <div className="flex items-center">
+                                <div className="p-2 bg-green-200 dark:bg-green-800 rounded-lg">
+                                  <Coffee className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div className="ml-3">
+                                  <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                                    Total unités vendues
+                                  </p>
+                                  <p className="text-lg font-bold text-green-900 dark:text-green-100">
+                                    {productSales.reduce((total, product) => total + product.quantity, 0)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-4">
+                              <div className="flex items-center">
+                                <div className="p-2 bg-purple-200 dark:bg-purple-800 rounded-lg">
+                                  <CreditCard className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <div className="ml-3">
+                                  <p className="text-sm font-medium text-purple-800 dark:text-purple-300">
+                                    Revenus total
+                                  </p>
+                                  <p className="text-lg font-bold text-purple-900 dark:text-purple-100">
+                                    {productSales.reduce((total, product) => total + product.totalRevenue, 0).toLocaleString('fr-CD')} FC
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Liste détaillée des produits */}
+                          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                Détail des ventes par produit
+                              </h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                Classés par quantité vendue (du plus vendu au moins vendu)
+                              </p>
+                            </div>
+                            
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-700">
+                                  <tr>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                      Produit
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                      Catégorie
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                      Quantité vendue
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                      Prix moyen
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                      Revenus total
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                  {productSales.map((product, index) => (
+                                    <tr key={product.name} className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${index < 3 ? 'bg-yellow-50 dark:bg-yellow-900/10' : ''}`}>
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                          {index < 3 && (
+                                            <div className={`h-6 w-6 rounded-full mr-3 flex items-center justify-center text-xs font-bold ${
+                                              index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                                              index === 1 ? 'bg-gray-300 text-gray-700' :
+                                              'bg-orange-300 text-orange-900'
+                                            }`}>
+                                              {index + 1}
+                                            </div>
+                                          )}
+                                          <div>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                              {product.name}
+                                            </div>
+                                            {index < 3 && (
+                                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                🏆 Top {index + 1} des ventes
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                          product.category === 'drink' 
+                                            ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400'
+                                            : product.category === 'food'
+                                            ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400'
+                                            : product.category === 'dessert'
+                                            ? 'bg-pink-100 dark:bg-pink-900/20 text-pink-800 dark:text-pink-400'
+                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                                        }`}>
+                                          {product.category === 'drink' && '🥤 Boisson'}
+                                          {product.category === 'food' && '🍽️ Plat'}
+                                          {product.category === 'dessert' && '🍰 Dessert'}
+                                          {product.category === 'appetizer' && '🥗 Entrée'}
+                                          {!['drink', 'food', 'dessert', 'appetizer'].includes(product.category) && product.category}
+                                        </span>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                          <div className="text-sm font-bold text-gray-900 dark:text-white">
+                                            {product.quantity}
+                                          </div>
+                                          <div className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                                            {product.category === 'drink' ? 'bouteilles/verres' : 'portions'}
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                        {product.averagePrice.toLocaleString('fr-CD')} FC
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                          {product.totalRevenue.toLocaleString('fr-CD')} FC
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                          {((product.totalRevenue / productSales.reduce((total, p) => total + p.totalRevenue, 0)) * 100).toFixed(1)}% du total
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

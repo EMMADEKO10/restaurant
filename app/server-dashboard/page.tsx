@@ -499,7 +499,7 @@ export default function ServerDashboardPage() {
                                         {item.quantity}x {item.name}
                                       </span>
                                       <span className="text-gray-600 dark:text-gray-400">
-                                        €{(item.price * item.quantity).toFixed(2)}
+                                        {(item.price * item.quantity).toLocaleString('fr-CD')} FC
                                       </span>
                                     </div>
                                   ))}
@@ -507,7 +507,7 @@ export default function ServerDashboardPage() {
                                 <div className="border-t border-gray-200 dark:border-gray-600 mt-2 pt-2">
                                   <div className="flex justify-between font-semibold">
                                     <span>Total:</span>
-                                    <span>€{order.total.toFixed(2)}</span>
+                                    <span>{order.total.toLocaleString('fr-CD')} FC</span>
                                   </div>
                                 </div>
                               </div>
@@ -634,7 +634,7 @@ export default function ServerDashboardPage() {
                             {item.quantity}x {item.name}
                           </span>
                           <span className="text-gray-600 dark:text-gray-400">
-                            €{(item.price * item.quantity).toFixed(2)}
+                            {(item.price * item.quantity).toLocaleString('fr-CD')} FC
                           </span>
                         </div>
                       ))}
@@ -642,7 +642,7 @@ export default function ServerDashboardPage() {
                     <div className="border-t border-gray-200 dark:border-gray-600 mt-2 pt-2">
                       <div className="flex justify-between font-semibold">
                         <span>Total:</span>
-                        <span>€{selectedOrder.total.toFixed(2)}</span>
+                        <span>{selectedOrder.total.toLocaleString('fr-CD')} FC</span>
                       </div>
                     </div>
                   </div>

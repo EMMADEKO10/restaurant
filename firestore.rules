@@ -67,6 +67,30 @@ service cloud.firestore {
       allow delete: if request.auth != null;
     }
     
+    // Règles pour la collection dailyStats (statistiques quotidiennes)
+    match /dailyStats/{document} {
+      // Permet la lecture aux admins et serveurs
+      allow read: if isServer();
+      
+      // Permet la création et mise à jour aux admins uniquement
+      allow create, update: if isAdmin();
+      
+      // Permet la suppression aux admins uniquement
+      allow delete: if isAdmin();
+    }
+    
+    // Règles pour la collection monthlyStats (statistiques mensuelles)
+    match /monthlyStats/{document} {
+      // Permet la lecture aux admins et serveurs
+      allow read: if isServer();
+      
+      // Permet la création et mise à jour aux admins uniquement
+      allow create, update: if isAdmin();
+      
+      // Permet la suppression aux admins uniquement
+      allow delete: if isAdmin();
+    }
+    
     // Règles pour les autres collections (si nécessaire)
     match /{document=**} {
       // Par défaut, refuser l'accès

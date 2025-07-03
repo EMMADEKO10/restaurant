@@ -6,9 +6,10 @@ import { UserMenu } from '@/components/auth/UserMenu'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { getAllDishes, createDish, updateDish, deleteDish, type Dish } from '@/lib/firebase/dishes'
-import { getAllOrders, type Order, type OrderItem } from '@/lib/firebase/orders'
+import { getAllOrders, type Order, type OrderItem, autoCleanupOrders } from '@/lib/firebase/orders'
+import { getDailyStats, getMonthlyStats, processHistoricalStats, type DailyStats, type MonthlyStats } from '@/lib/firebase/analytics'
 import { getFirestore, collection, getDocs } from 'firebase/firestore'
-import { Utensils, Users, CreditCard, Database, ShieldAlert, Loader2, Receipt, Coffee, Pizza, Plus, TrendingUp } from 'lucide-react'
+import { Utensils, Users, CreditCard, Database, ShieldAlert, Loader2, Receipt, Coffee, Pizza, Plus, TrendingUp, Calendar, BarChart3 } from 'lucide-react'
 import CreateDishForm from '@/components/dashboard/CreateDishForm'
 import DishList from '@/components/dashboard/DishList'
 import { updateUserRole } from '@/lib/firebase/auth'
@@ -42,7 +43,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<User[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'dishes' | 'users' | 'orders' | 'tracking'>('dishes')
+  const [activeTab, setActiveTab] = useState<'dishes' | 'users' | 'orders' | 'tracking' | 'history'>('dishes')
   
   // États pour la gestion des plats
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
@@ -55,6 +56,12 @@ export default function AdminDashboardPage() {
   
   // Nouvelles statistiques pour la traçabilité des produits
   const [productSales, setProductSales] = useState<ProductSales[]>([])
+  
+  // Statistiques historiques
+  const [dailyStats, setDailyStats] = useState<DailyStats[]>([])
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([])
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
 
   // États pour la gestion des utilisateurs
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -95,6 +102,15 @@ export default function AdminDashboardPage() {
           
           // Calculer les statistiques de traçabilité des produits
           calculateProductSales(allOrders)
+          
+          // Charger les statistiques historiques
+          await loadHistoricalStats()
+          
+          // Nettoyer automatiquement les anciennes commandes
+          await autoCleanupOrders()
+          
+          // Traiter les statistiques historiques (générer les stats d'hier si nécessaire)
+          await processHistoricalStats(allOrders)
           
         } catch (error) {
           console.error('Erreur lors du chargement des données:', error)
@@ -201,6 +217,30 @@ export default function AdminDashboardPage() {
     setProductSales(sortedProducts)
     
     console.log('Statistiques des produits calculées:', sortedProducts)
+  }
+
+  // Charger les statistiques historiques
+  const loadHistoricalStats = async () => {
+    try {
+      console.log('📈 Chargement des statistiques historiques...')
+      
+      // Charger les statistiques mensuelles
+      const monthlyData = await getMonthlyStats(selectedYear)
+      setMonthlyStats(monthlyData)
+      
+      // Charger les statistiques quotidiennes pour l'année sélectionnée
+      let dailyData: DailyStats[]
+      if (selectedMonth) {
+        dailyData = await getDailyStats(selectedYear, selectedMonth)
+      } else {
+        dailyData = await getDailyStats(selectedYear)
+      }
+      setDailyStats(dailyData)
+      
+      console.log(`✅ Statistiques historiques chargées: ${monthlyData.length} mois, ${dailyData.length} jours`)
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des statistiques historiques:', error)
+    }
   }
 
   // Formater la date
@@ -557,6 +597,20 @@ export default function AdminDashboardPage() {
                     <span className="hidden sm:inline">Traçabilité</span>
                   </div>
                 </button>
+                <button
+                  onClick={() => setActiveTab('history')}
+                  className={`py-4 px-6 font-medium text-sm border-b-2 transition-all duration-200 ${
+                    activeTab === 'history'
+                      ? 'border-restaurant-500 text-restaurant-600 dark:text-restaurant-400 bg-restaurant-50 dark:bg-restaurant-900/10'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  aria-current={activeTab === 'history' ? 'page' : undefined}
+                >
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Historique</span>
+                  </div>
+                </button>
               </nav>
             </div>
             
@@ -567,6 +621,7 @@ export default function AdminDashboardPage() {
                 {activeTab === 'users' && 'Gestion des utilisateurs'}
                 {activeTab === 'orders' && 'Gestion des commandes'}
                 {activeTab === 'tracking' && 'Traçabilité'}
+                {activeTab === 'history' && 'Historique'}
               </h3>
             </div>
             
@@ -919,6 +974,254 @@ export default function AdminDashboardPage() {
                       )}
                     </div>
                   )}
+                  
+                                     {/* History Tab */}
+                   {activeTab === 'history' && (
+                     <div>
+                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 hidden sm:block">
+                         Historique des ventes
+                       </h3>
+                       
+                       {/* Filtres */}
+                       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
+                         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                           <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                               Année
+                             </label>
+                             <select
+                               value={selectedYear}
+                               onChange={(e) => {
+                                 setSelectedYear(parseInt(e.target.value))
+                                 setSelectedMonth(null)
+                               }}
+                               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-restaurant-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                             >
+                               {Array.from({length: 5}, (_, i) => new Date().getFullYear() - i).map(year => (
+                                 <option key={year} value={year}>{year}</option>
+                               ))}
+                             </select>
+                           </div>
+                           
+                           <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                               Mois (optionnel)
+                             </label>
+                             <select
+                               value={selectedMonth || ''}
+                               onChange={(e) => setSelectedMonth(e.target.value ? parseInt(e.target.value) : null)}
+                               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-restaurant-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                             >
+                               <option value="">Tous les mois</option>
+                               {Array.from({length: 12}, (_, i) => ({
+                                 value: i + 1,
+                                 name: new Date(2024, i).toLocaleDateString('fr-FR', { month: 'long' })
+                               })).map(month => (
+                                 <option key={month.value} value={month.value}>
+                                   {month.name.charAt(0).toUpperCase() + month.name.slice(1)}
+                                 </option>
+                               ))}
+                             </select>
+                           </div>
+                           
+                                                      <div className="flex gap-2">
+                             <button
+                               onClick={loadHistoricalStats}
+                               className="px-4 py-2 bg-restaurant-600 hover:bg-restaurant-700 text-white rounded-lg transition-colors"
+                             >
+                               <BarChart3 className="h-4 w-4 inline mr-2" />
+                               Actualiser
+                             </button>
+                             
+                             <button
+                               onClick={async () => {
+                                 try {
+                                   setIsLoading(true)
+                                   console.log('🔄 Génération manuelle des statistiques...')
+                                   
+                                   // Générer les statistiques pour aujourd'hui avec toutes les commandes
+                                   const today = new Date().toISOString().split('T')[0]
+                                   const { generateAndSaveDailyStats } = await import('@/lib/firebase/analytics')
+                                   await generateAndSaveDailyStats(orders, today)
+                                   
+                                   // Recharger les statistiques
+                                   await loadHistoricalStats()
+                                   
+                                   alert('✅ Statistiques générées avec succès !')
+                                 } catch (error) {
+                                   console.error('Erreur:', error)
+                                   alert('❌ Erreur lors de la génération des statistiques')
+                                 } finally {
+                                   setIsLoading(false)
+                                 }
+                               }}
+                               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                               disabled={isLoading}
+                             >
+                               <Plus className="h-4 w-4 inline mr-2" />
+                               Générer stats aujourd'hui
+                             </button>
+                           </div>
+                         </div>
+                       </div>
+                       
+                       {/* Statistiques mensuelles */}
+                       {!selectedMonth && monthlyStats.length > 0 && (
+                         <div className="mb-8">
+                           <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                             Résumé mensuel {selectedYear}
+                           </h4>
+                           
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                             {monthlyStats.map((monthStats) => (
+                               <div key={monthStats.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                                 <div className="flex items-center justify-between mb-4">
+                                   <h5 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                     {monthStats.monthName}
+                                   </h5>
+                                   <Calendar className="h-5 w-5 text-gray-400" />
+                                 </div>
+                                 
+                                 <div className="space-y-3">
+                                   <div>
+                                     <p className="text-sm text-gray-600 dark:text-gray-400">Revenus total</p>
+                                     <p className="text-xl font-bold text-gray-900 dark:text-white">
+                                       {monthStats.totalRevenue.toLocaleString('fr-CD')} FC
+                                     </p>
+                                   </div>
+                                   
+                                   <div className="grid grid-cols-2 gap-4">
+                                     <div>
+                                       <p className="text-sm text-gray-600 dark:text-gray-400">Commandes</p>
+                                       <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                                         {monthStats.totalOrders}
+                                       </p>
+                                     </div>
+                                     <div>
+                                       <p className="text-sm text-gray-600 dark:text-gray-400">Articles</p>
+                                       <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                                         {monthStats.totalItems}
+                                       </p>
+                                     </div>
+                                   </div>
+                                   
+                                   {monthStats.topProduct.name && (
+                                     <div>
+                                       <p className="text-sm text-gray-600 dark:text-gray-400">Produit le plus vendu</p>
+                                       <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                         {monthStats.topProduct.name}
+                                       </p>
+                                       <p className="text-xs text-gray-500 dark:text-gray-400">
+                                         {monthStats.topProduct.quantity} unités vendues
+                                       </p>
+                                     </div>
+                                   )}
+                                   
+                                   {monthStats.bestDay.date && (
+                                     <div>
+                                       <p className="text-sm text-gray-600 dark:text-gray-400">Meilleur jour</p>
+                                       <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                         {new Date(monthStats.bestDay.date).toLocaleDateString('fr-FR')}
+                                       </p>
+                                       <p className="text-xs text-gray-500 dark:text-gray-400">
+                                         {monthStats.bestDay.revenue.toLocaleString('fr-CD')} FC
+                                       </p>
+                                     </div>
+                                   )}
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                       )}
+                       
+                       {/* Statistiques quotidiennes */}
+                       {dailyStats.length > 0 && (
+                         <div>
+                           <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                             {selectedMonth ? 
+                               `Détail quotidien - ${new Date(selectedYear, selectedMonth - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}` :
+                               `Historique quotidien ${selectedYear}`
+                             }
+                           </h4>
+                           
+                           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                             <div className="overflow-x-auto">
+                               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                 <thead className="bg-gray-50 dark:bg-gray-700">
+                                   <tr>
+                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                       Date
+                                     </th>
+                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                       Revenus
+                                     </th>
+                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                       Commandes
+                                     </th>
+                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                       Articles
+                                     </th>
+                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                       Produit top
+                                     </th>
+                                   </tr>
+                                 </thead>
+                                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                   {dailyStats.map((dayStats) => (
+                                     <tr key={dayStats.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                         {new Date(dayStats.date).toLocaleDateString('fr-FR', {
+                                           weekday: 'short',
+                                           day: '2-digit',
+                                           month: '2-digit',
+                                           year: '2-digit'
+                                         })}
+                                       </td>
+                                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                         {dayStats.totalRevenue.toLocaleString('fr-CD')} FC
+                                       </td>
+                                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                         {dayStats.totalOrders}
+                                       </td>
+                                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                         {dayStats.totalItems}
+                                       </td>
+                                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                         {dayStats.topProduct.name ? (
+                                           <div>
+                                             <div className="font-medium">{dayStats.topProduct.name}</div>
+                                             <div className="text-xs text-gray-500 dark:text-gray-400">
+                                               {dayStats.topProduct.quantity} unités
+                                             </div>
+                                           </div>
+                                         ) : (
+                                           <span className="text-gray-400">-</span>
+                                         )}
+                                       </td>
+                                     </tr>
+                                   ))}
+                                 </tbody>
+                               </table>
+                             </div>
+                           </div>
+                         </div>
+                       )}
+                       
+                       {/* Message si aucune donnée */}
+                       {dailyStats.length === 0 && monthlyStats.length === 0 && (
+                         <div className="text-center py-12">
+                           <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                           <p className="text-gray-500 dark:text-gray-400">
+                             Aucune donnée historique disponible pour cette période
+                           </p>
+                           <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                             Les statistiques sont générées automatiquement chaque jour
+                           </p>
+                         </div>
+                       )}
+                     </div>
+                   )}
                 </div>
               )}
             </div>

@@ -9,7 +9,8 @@ import {
   query, 
   where, 
   orderBy,
-  serverTimestamp 
+  serverTimestamp,
+  Timestamp 
 } from 'firebase/firestore'
 import { db } from './config'
 
@@ -47,6 +48,90 @@ const generateOrderNumber = (): string => {
   const timestamp = Date.now().toString(36)
   const random = Math.random().toString(36).substr(2, 5)
   return `CMD-${timestamp}-${random}`.toUpperCase()
+}
+
+// Supprimer les commandes anciennes (plus de 24h)
+export const cleanupOldOrders = async () => {
+  try {
+    // Calculer la date limite (24 heures en arrière)
+    const twentyFourHoursAgo = new Date()
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+    const cutoffTimestamp = Timestamp.fromDate(twentyFourHoursAgo)
+    
+    console.log('🧹 Début du nettoyage des commandes antérieures à:', twentyFourHoursAgo.toISOString())
+    
+    // Requête pour obtenir les commandes plus anciennes que 24h
+    const q = query(
+      collection(db, 'orders'),
+      where('createdAt', '<', cutoffTimestamp)
+    )
+    
+    const querySnapshot = await getDocs(q)
+    
+    if (querySnapshot.empty) {
+      console.log('✅ Aucune commande ancienne à supprimer')
+      return { deletedCount: 0, message: 'Aucune commande ancienne trouvée' }
+    }
+    
+    // Supprimer les commandes une par une
+    const deletionPromises = querySnapshot.docs.map(async (docSnapshot) => {
+      try {
+        await deleteDoc(doc(db, 'orders', docSnapshot.id))
+        console.log(`🗑️ Commande supprimée: ${docSnapshot.id} (${docSnapshot.data().orderNumber})`)
+        return { success: true, id: docSnapshot.id }
+      } catch (error) {
+        console.error(`❌ Erreur lors de la suppression de la commande ${docSnapshot.id}:`, error)
+        return { success: false, id: docSnapshot.id, error }
+      }
+    })
+    
+    const results = await Promise.all(deletionPromises)
+    const successCount = results.filter(r => r.success).length
+    const errorCount = results.filter(r => !r.success).length
+    
+    console.log(`✅ Nettoyage terminé: ${successCount} commandes supprimées, ${errorCount} erreurs`)
+    
+    return {
+      deletedCount: successCount,
+      errorCount,
+      message: `${successCount} commandes supprimées avec succès`,
+      cutoffDate: twentyFourHoursAgo.toISOString()
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur lors du nettoyage des commandes:', error)
+    throw error
+  }
+}
+
+// Nettoyer automatiquement les commandes au démarrage (avec throttling)
+export const autoCleanupOrders = async () => {
+  try {
+    // Vérifier la dernière fois que le nettoyage a été effectué
+    const lastCleanup = localStorage.getItem('lastOrdersCleanup')
+    const now = new Date().getTime()
+    
+    // Ne nettoyer qu'une fois par heure maximum
+    if (lastCleanup && (now - parseInt(lastCleanup)) < 60 * 60 * 1000) {
+      console.log('⏳ Nettoyage des commandes déjà effectué récemment, passage ignoré')
+      return
+    }
+    
+    console.log('🔄 Démarrage du nettoyage automatique des commandes...')
+    const result = await cleanupOldOrders()
+    
+    // Enregistrer l'heure du dernier nettoyage
+    localStorage.setItem('lastOrdersCleanup', now.toString())
+    
+    if (result.deletedCount > 0) {
+      console.log(`🎉 Nettoyage automatique réussi: ${result.deletedCount} commandes supprimées`)
+    }
+    
+    return result
+  } catch (error) {
+    console.error('❌ Erreur lors du nettoyage automatique:', error)
+    // Ne pas lever l'erreur pour ne pas interrompre l'application
+  }
 }
 
 // Créer une nouvelle commande

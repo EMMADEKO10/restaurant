@@ -54,8 +54,9 @@ service cloud.firestore {
     
     // Règles pour la collection orders
     match /orders/{document} {
-      // Permet la lecture des commandes aux utilisateurs authentifiés
-      allow read: if request.auth != null;
+      // Permet la lecture publique des commandes (nécessaire pour la page de succès)
+      // et aux utilisateurs authentifiés pour les listes
+      allow read: if true;
       
       // Permet la création de commandes (même sans authentification pour les clients)
       allow create: if true;

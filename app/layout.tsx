@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ui/theme-provider'
 import { ToastProvider } from '@/components/ui/toast-provider'
 import { CartProviderClient } from '@/components/providers/CartProviderClient'
+import { OfflineProvider } from '@/components/providers/OfflineProvider'
+import { OfflineIndicator } from '@/components/offline/OfflineIndicator'
 import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -42,9 +44,12 @@ export default function RootLayout({
       <body className={cn('min-h-screen bg-background antialiased', inter.className)}>
         <ThemeProvider attribute="class" defaultTheme="light">
           <ToastProvider>
-            <CartProviderClient>
-              {children}
-            </CartProviderClient>
+            <OfflineProvider>
+              <CartProviderClient>
+                <OfflineIndicator />
+                {children}
+              </CartProviderClient>
+            </OfflineProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>
